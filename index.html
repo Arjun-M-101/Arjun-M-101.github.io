@@ -483,6 +483,10 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
 .roadmap li.now::after { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 0 5px rgba(233,189,98,.15); }
 .roadmap .p { font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .roadmap li.now .p { color: var(--gold); }
+.roadmap li.done::before { background: rgba(127,207,154,.55); }
+.roadmap li.done::after { background: #7fcf9a; border-color: #7fcf9a; }
+.roadmap li.done .p { color: #7fcf9a; }
+.lab .pstats, .lab .feat, .lab .evidence { position: relative; }
 .roadmap b { font-weight: 600; font-size: .98rem; line-height: 1.3; }
 .roadmap span:last-child { color: var(--muted); font-size: .86rem; line-height: 1.45; }
 @media (max-width: 1000px) { .roadmap { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 26px; } }
@@ -552,8 +556,8 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
       <ul class="hero-stats">
         <li><div class="n" data-count="400" data-suffix="+">400+</div><div class="l">Mainframe tables unloaded</div></li>
         <li><div class="n" data-count="2">2</div><div class="l">AWS pipelines run live</div></li>
-        <li><div class="n" data-count="189">189</div><div class="l">Automated tests</div></li>
-        <li><div class="n" data-count="23">23</div><div class="l">Real failures fixed and written up</div></li>
+        <li><div class="n" data-count="266">266</div><div class="l">Automated tests</div></li>
+        <li><div class="n" data-count="25">25</div><div class="l">Real failures fixed and written up</div></li>
       </ul>
     </div>
   </section>
@@ -576,6 +580,7 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
           <li><span class="yr">Before AWS</span><span class="t">Local pipelines</span><span class="d">Airflow + Spark batch pipeline, Kafka + Spark streaming pipeline, SQL Server star-schema warehouse.</span></li>
           <li><span class="yr">2026</span><span class="t">Batch lakehouse on AWS</span><span class="d">Terraform, Step Functions, Glue, Redshift Serverless, dbt, Iceberg.</span></li>
           <li><span class="yr">Oct 2026</span><span class="t">Connected-car telemetry on AWS</span><span class="d">IoT Core, Firehose, Lambda, Athena, DynamoDB, CloudFormation.</span></li>
+          <li><span class="yr">Oct 2026</span><span class="t">SpecFlow, built and tested locally</span><span class="d">AI-assisted pipeline builder: DuckDB, FastAPI, Gemini tool use, Terraform for AWS.</span></li>
           <li class="now"><span class="yr">Now</span><span class="t">Moving into data engineering</span><span class="d">Building on AWS, every week.</span></li>
         </ol>
       </div>
@@ -786,6 +791,24 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
               <dt>Fix</dt><dd>A script that opens the workgroup to one IP, runs dbt, and closes it again.</dd>
             </dl>
           </article>
+          <article class="inc" data-reveal>
+            <div class="top"><span>SpecFlow · AI planner</span><span class="sev">Plan rejected</span></div>
+            <h4>Every AI plan arrived with its parameters missing.</h4>
+            <dl>
+              <dt>Saw</dt><dd>Gemini's plans failed validation with <code>name Field required</code> on every step that takes parameters.</dd>
+              <dt>Cause</dt><dd>The tool schema declared step parameters as an object with no listed fields. Gemini's OpenAI-compatible endpoint returned <code>{}</code> for it.</dd>
+              <dt>Fix</dt><dd>Parameters now travel as a JSON string for OpenAI-compatible models. The validator caught it every time, so only the rules plan ever ran.</dd>
+            </dl>
+          </article>
+          <article class="inc" data-reveal>
+            <div class="top"><span>SpecFlow · ingestion</span><span class="sev">Load failed</span></div>
+            <h4>Real Kaggle files broke CSV auto-detection.</h4>
+            <dl>
+              <dt>Saw</dt><dd>DuckDB: <code>not possible to automatically detect the CSV parsing dialect</code> on <code>USvideos.csv</code>.</dd>
+              <dt>Cause</dt><dd>Multi-line quoted descriptions, quotes inside quotes and mixed encodings, which synthetic test data never had.</dd>
+              <dt>Fix</dt><dd>A fallback ladder: auto-detect, then explicit quote rules, Latin-1, then tolerant parsing, with bad rows counted as malformed. All 78,301 rows loaded.</dd>
+            </dl>
+          </article>
         </div>
       </div>
 
@@ -818,10 +841,11 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
     <div class="wrap">
       <div class="lab-head">
         <div>
-          <p class="eyebrow">Next build</p>
-          <span class="status-pill">In design · building next</span>
+          <p class="eyebrow">Latest build</p>
+          <span class="status-pill">Built and tested locally · AWS run next</span>
           <h2 data-decode style="margin-top:22px">One spec. Batch, streaming or hybrid.</h2>
-          <p class="lead" data-reveal><strong>SpecFlow</strong> (working title) is the project I'm designing next: an AI-assisted, human-approved pipeline builder. You drop a file or connect a live feed. It profiles every field, proposes cleaning steps and business metrics, and asks you only where a wrong guess would be costly. You approve a plan, and a tested engine runs it into Iceberg tables and a dashboard.</p>
+          <p class="lead" data-reveal><strong>SpecFlow</strong> is an AI-assisted, human-approved pipeline builder that I designed and built. You drop a file or connect a live feed. It profiles every field, proposes cleaning steps and business metrics, and asks you only where a wrong guess would be costly. You approve a plan, and a tested engine runs it into Silver, Gold and Quarantine tables and a dashboard: DuckDB on a laptop, Apache Iceberg on AWS.</p>
+          <div class="links" style="margin-top:26px" data-reveal><a class="btn" href="https://github.com/Arjun-M-101/specflow" target="_blank" rel="noopener">Code <span class="arr">↗</span></a></div>
         </div>
         <ul class="principles" data-reveal>
           <li><b>The AI plans. The engine executes.</b><span>The model writes a validated JSON spec, never code that runs.</span></li>
@@ -830,10 +854,10 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
         </ul>
       </div>
 
-      <div class="app" data-reveal aria-label="SpecFlow concept preview">
+      <div class="app" data-reveal aria-label="SpecFlow interactive replica">
         <div class="app-bar">
           <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span class="name">SpecFlow <em>· concept preview</em></span>
+          <span class="name">SpecFlow <em>· in-browser replica</em></span>
           <span class="src" id="sfSrc">INvideos.csv · 37,352 rows</span>
           <div class="modes" role="group" aria-label="Pipeline mode">
             <button type="button" data-mode="batch" aria-pressed="true">Batch</button>
@@ -866,23 +890,46 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
             </div>
           </div>
         </div>
-        <div class="app-foot"><span>A clickable design mock. Toggle fields and steps, switch the mode, and watch the spec and validator react.</span><span>Nothing here touches real data yet.</span></div>
+        <div class="app-foot"><span>A lightweight replica of the real plan screen. Toggle fields and steps, switch the mode, and watch the spec and validator react.</span><span>The real app's screens are below.</span></div>
+      </div>
+
+      <div class="pstats" data-reveal>
+        <div><div class="n">78,301</div><div class="l">real YouTube rows in = 73,357 clean + 4,944 quarantined</div></div>
+        <div><div class="n">77</div><div class="l">tests plus an eval on 6 datasets, green in GitHub Actions</div></div>
+        <div><div class="n">22</div><div class="l">operations, compiled to DuckDB, Athena and Spark SQL</div></div>
+        <div><div class="n">0</div><div class="l">new rows when a stream is replayed: 378 events merged</div></div>
+      </div>
+      <ul class="feat" data-reveal>
+        <li><span><b>The AI never writes code.</b> Gemini, Bedrock or Claude returns a JSON plan through tool use and sees only a masked profile. The plan is checked for schema, column references and SQL safety, then dry-run. If it fails, the rules plan is used.</span></li>
+        <li><span><b>It asks instead of guessing.</b> Business metrics, dedupe keys and personal data become questions with options. Nothing runs until a person approves the spec.</span></li>
+        <li><span><b>Every row is accounted for.</b> Each run checks that rows in equal clean plus quarantined plus malformed. A failing error-level check blocks publishing, and every rejected row keeps a reason code.</span></li>
+        <li><span><b>One spec, three modes.</b> Batch, micro-batch streaming with a watermark and dead letter, or a backfill followed by a live feed. Replays merge on the business key, so they never duplicate.</span></li>
+      </ul>
+      <div class="evidence">
+        <div class="cap"><span>Evidence from local runs on my laptop</span><span>Click to enlarge</span></div>
+        <div class="shots">
+          <button class="shot contain" data-full="img/sf-arch.webp" data-cap="Architecture: one approved spec, a local engine and an AWS target"><img src="img/sf-arch.webp" alt="SpecFlow architecture diagram" loading="lazy"><figcaption>Architecture</figcaption></button>
+          <button class="shot" data-full="img/sf-plan.webp" data-cap="Plan planned by Gemini through tool use, validated before approval"><img src="img/sf-plan.webp" alt="SpecFlow plan screen with AI-planned steps" loading="lazy"><figcaption>AI-planned spec</figcaption></button>
+          <button class="shot" data-full="img/sf-run.webp" data-cap="Batch run on real Kaggle data: 78,301 rows in, 73,357 clean, 4,944 quarantined"><img src="img/sf-run.webp" alt="SpecFlow run monitor" loading="lazy"><figcaption>Run and reconciliation</figcaption></button>
+          <button class="shot" data-full="img/sf-dashboard.webp" data-cap="Dashboard generated from the approved spec"><img src="img/sf-dashboard.webp" alt="SpecFlow auto-generated dashboard" loading="lazy"><figcaption>Auto dashboard</figcaption></button>
+          <button class="shot" data-full="img/sf-stream.webp" data-cap="Stream replayed after a checkpoint reset: 378 merged, 0 new rows, Silver unchanged at 387"><img src="img/sf-stream.webp" alt="SpecFlow live stream after replay" loading="lazy"><figcaption>Replay-safe stream</figcaption></button>
+        </div>
       </div>
 
       <ol class="roadmap" data-reveal>
-        <li class="now"><span class="p">Phase 0 · now</span><b>Spec and catalog</b><span>The JSON contract and a frozen set of 22 operations.</span></li>
-        <li><span class="p">Phase 1</span><b>Local engine</b><span>Profiler, validator and SQL compiler on DuckDB.</span></li>
-        <li><span class="p">Phase 2</span><b>AI planner</b><span>Structured output on Bedrock, scored against six benchmark datasets.</span></li>
-        <li><span class="p">Phase 3</span><b>AWS batch</b><span>S3, Glue, Iceberg, Athena and Step Functions as code.</span></li>
-        <li><span class="p">Phase 4</span><b>Web app</b><span>Review screens and an auto-generated dashboard.</span></li>
-        <li><span class="p">Phase 5</span><b>Streaming</b><span>Kinesis to Iceberg with templated, tested jobs.</span></li>
-        <li><span class="p">Phase 6</span><b>Hybrid and drift</b><span>Backfill plus live on one table, with schema-drift re-planning.</span></li>
+        <li class="done"><span class="p">Phase 0 · done</span><b>Spec and catalog</b><span>The JSON contract and a frozen set of 22 operations.</span></li>
+        <li class="done"><span class="p">Phase 1 · done</span><b>Local engine</b><span>Profiler, validators and SQL compiler on DuckDB.</span></li>
+        <li class="done"><span class="p">Phase 2 · done</span><b>AI planner</b><span>Tool-use JSON on Gemini, Bedrock or Claude, with a rules fallback.</span></li>
+        <li class="now"><span class="p">Phase 3 · next</span><b>AWS batch</b><span>Terraform for S3, Glue, Iceberg, Athena and Step Functions, validated in CI. First live run next.</span></li>
+        <li class="done"><span class="p">Phase 4 · done</span><b>Web app</b><span>Review screens, a run monitor and an auto-generated dashboard.</span></li>
+        <li class="done"><span class="p">Phase 5 · done locally</span><b>Streaming</b><span>Micro-batches, watermark and dead letter. Kinesis and Glue jobs ready for AWS.</span></li>
+        <li class="done"><span class="p">Phase 6 · done locally</span><b>Hybrid and drift</b><span>Backfill then live on one table, with schema-drift detection.</span></li>
       </ol>
 
       <div class="collab" data-reveal>
         <div>
-          <h3>First proof: rebuild my own lakehouse through it.</h3>
-          <p>The YouTube data goes through SpecFlow, and the output has to match my hand-built pipeline row for row. If you care about data quality and developer tools, I'd like to build this with you.</p>
+          <h3>Next proof: the same spec on AWS.</h3>
+          <p>The approved YouTube spec runs on Athena and Glue through Terraform, and the output has to match my hand-built lakehouse row for row. If you care about data quality and developer tools, I'd like to build this with you.</p>
         </div>
         <a class="btn solid" href="#contact" data-link>Build it with me <span class="arr">→</span></a>
       </div>
@@ -897,8 +944,8 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
     </div>
     <div class="marquee" aria-hidden="true">
       <div class="track">
-        <span>PySpark</span><span>AWS Glue</span><span>Terraform</span><span>Kafka</span><span>Step Functions</span><span>Redshift</span><span>dbt</span><span>Iceberg</span><span>IoT Core</span><span>Athena</span><span>Airflow</span><span>Db2</span>
-        <span>PySpark</span><span>AWS Glue</span><span>Terraform</span><span>Kafka</span><span>Step Functions</span><span>Redshift</span><span>dbt</span><span>Iceberg</span><span>IoT Core</span><span>Athena</span><span>Airflow</span><span>Db2</span>
+        <span>PySpark</span><span>AWS Glue</span><span>Terraform</span><span>Kafka</span><span>Step Functions</span><span>Redshift</span><span>dbt</span><span>Iceberg</span><span>IoT Core</span><span>Athena</span><span>DuckDB</span><span>Airflow</span><span>Db2</span>
+        <span>PySpark</span><span>AWS Glue</span><span>Terraform</span><span>Kafka</span><span>Step Functions</span><span>Redshift</span><span>dbt</span><span>Iceberg</span><span>IoT Core</span><span>Athena</span><span>DuckDB</span><span>Airflow</span><span>Db2</span>
       </div>
     </div>
     <div class="wrap">
@@ -909,7 +956,8 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
             <thead><tr><th>column_name</th><th>tools</th><th>used_in</th></tr></thead>
             <tbody>
               <tr><td>languages</td><td>SQL (CTEs, window functions), Python</td><td>everywhere</td></tr>
-              <tr><td>processing</td><td>PySpark, Spark SQL, Structured Streaming, Pandas</td><td>lakehouse, stockpulse</td></tr>
+              <tr><td>processing</td><td>PySpark, Spark SQL, Structured Streaming, DuckDB, Pandas</td><td>lakehouse, specflow</td></tr>
+              <tr><td>ai_tooling</td><td>LLM tool use (Gemini, Bedrock), Pydantic, sqlglot, FastAPI</td><td>specflow, telemetry</td></tr>
               <tr><td>orchestration</td><td>AWS Step Functions, EventBridge, Apache Airflow</td><td>lakehouse, local</td></tr>
               <tr><td>streaming_iot</td><td>Apache Kafka, AWS IoT Core (MQTT), Amazon Data Firehose</td><td>telemetry, stockpulse</td></tr>
               <tr><td>storage</td><td>Amazon S3, Apache Iceberg, Parquet, DynamoDB</td><td>both AWS builds</td></tr>
@@ -922,7 +970,7 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
             </tbody>
           </table>
         </div>
-        <div class="foot">11 rows returned</div>
+        <div class="foot">12 rows returned</div>
       </div>
       <div class="creds" data-reveal>
         <div class="cred"><span class="k">Certification</span><b>AWS Certified Cloud Practitioner</b><span>CLF-C02 · 2025</span></div>
@@ -942,7 +990,7 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
       <div class="board" data-reveal>
         <div class="tile"><span class="k">Writing</span><b>Implementation guides for both AWS projects</b><p>Preparing them for publication on Kyndryl's internal knowledge platform.</p></div>
         <div class="tile"><span class="k">Reading next</span><b>Serverless ETL and Analytics with AWS Glue</b><p>A deeper look at the engine behind my lakehouse.</p></div>
-        <div class="tile"><span class="k">Designing</span><b>SpecFlow, phase 0</b><p>The spec contract and operation catalog for the pipeline builder above.</p></div>
+        <div class="tile"><span class="k">Building</span><b>SpecFlow on AWS</b><p>The engine, AI planner, web app and streaming work locally. Next is the first live AWS run.</p></div>
         <div class="tile"><span class="k">Open to</span><b>Collaborators and conversations</b><p>Data engineering, data quality and AI tooling for data teams.</p></div>
       </div>
       <div class="horizon" data-reveal>
