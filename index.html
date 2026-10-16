@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
 <style>
-/* Layout: a fixed WebGL field (14k "rows" that morph data-centre racks → stream → gold bars → medallion) behind a wide
+/* Layout: a fixed WebGL field (14k "rows" that morph a data-centre cabinet row → stream → gold bars → medallion) behind a wide
    editorial grid. The type carries the page; the three medallion metals are the only accents and map to
    Bronze / Silver / Gold. Deliberately single-theme (night), every colour set explicitly. */
 :root {
@@ -1225,14 +1225,19 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
     if (!gl) throw new Error('no webgl');
     var dpr = Math.min(window.devicePixelRatio || 1, 1.75);
 
+    var VS_RA = 0.62;
     var VS = [
-      'attribute vec3 aP0; attribute vec3 aP1; attribute vec3 aP2; attribute vec3 aP3; attribute float aR;',
+      'attribute vec3 aP0; attribute vec3 aP1; attribute vec3 aP2; attribute vec3 aP3; attribute float aR; attribute vec2 aS;',
       'uniform mat4 uModel; uniform mat4 uView; uniform mat4 uProj;',
       'uniform float uTime; uniform float uMix; uniform float uAlpha; uniform float uSize; uniform float uPixel; uniform vec2 uMouse;',
       'varying vec3 vColor; varying float vA;',
       'void main(){',
-      '  vec3 p0 = aP0 + vec3(sin(uTime*0.55 + aR*40.0), cos(uTime*0.47 + aR*23.0), sin(uTime*0.41 + aR*11.0))*0.035;',
       '  float fx = mod(aP1.x + uTime*(0.9 + aR*1.1) + 18.0, 36.0) - 18.0;',
+      '  vec3 p0 = aP0 + vec3(sin(uTime*0.55 + aR*40.0), cos(uTime*0.47 + aR*23.0), sin(uTime*0.41 + aR*11.0))*0.01;',
+      '  float vis = 1.0;',
+      '  if (aS.x > 0.5) { float Lr = aS.x - 1.0; float u = fx - aS.y;',
+      '    p0 = aP0 + vec3(' + Math.cos(VS_RA).toFixed(4) + ', 0.0, ' + (-Math.sin(VS_RA)).toFixed(4) + ') * (0.3*log(1.0 + exp(u/0.3))) + vec3(0.0, Lr*smoothstep(-Lr, 0.25, u), 0.0);',
+      '    vis = smoothstep(-Lr - 0.25, -Lr + 0.2, u); }',
       '  vec3 p1 = vec3(fx, aP1.y + sin(fx*0.32 + aP1.z*2.0 + uTime*0.4)*0.55, aP1.z);',
       '  vec3 p2 = aP2 + vec3(0.0, sin(uTime*0.9 + aP2.x*0.6 + aP2.z*0.5)*0.06, 0.0);',
       '  vec3 p3 = aP3 * (1.0 + sin(uTime*1.2 - length(aP3.xy)*1.4)*0.012);',
@@ -1242,7 +1247,8 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
       '  float seg = min(floor(m), 2.0); float f = m - seg;',
       '  float d = aR*0.45; float t = smoothstep(d, d + 0.55, f);',
       '  vec3 pos; vec3 col;',
-      '  if (seg < 0.5) { pos = mix(p0, p1, t); col = mix(c0, cS, t); }',
+      '  float vf = 1.0;',
+      '  if (seg < 0.5) { pos = mix(p0, p1, t); col = mix(c0, cS, t); vf = mix(vis, 1.0, t); }',
       '  else if (seg < 1.5) { pos = mix(p1, p2, t); col = mix(cS, cG, t); }',
       '  else { pos = mix(p2, p3, t); col = mix(cG, cM, t); }',
       '  vec4 world = uModel * vec4(pos, 1.0);',
@@ -1252,7 +1258,7 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
       '  gl_Position = uProj * mv;',
       '  gl_PointSize = uSize * (0.5 + aR*0.95) * uPixel * (14.0 / -mv.z);',
       '  vColor = col * (0.75 + fract(aR*7.31)*0.5);',
-      '  vA = uAlpha * (0.5 + fract(aR*3.17)*0.7);',
+      '  vA = uAlpha * (0.5 + fract(aR*3.17)*0.7) * vf;',
       '}'
     ].join('\n');
     var FS = [
@@ -1274,6 +1280,10 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
 
     var N = isMobile ? 7000 : 14000;
     var P0 = new Float32Array(N * 3), P1 = new Float32Array(N * 3), P2 = new Float32Array(N * 3), P3 = new Float32Array(N * 3), R = new Float32Array(N);
+    // cabinet row layout: local x runs along the row, local z is out of the cabinet fronts
+    var S = new Float32Array(N * 2), RK = isMobile ? 7 : 10, RW = 1.3, RD = 2.1, RH = 7.0, RG = 0.32, RY0 = -3.8;
+    var RA = 0.62, RDX = Math.cos(RA), RDZ = -Math.sin(RA), ROX = isMobile ? -1.9 : -3.4, ROZ = isMobile ? 6.5 : 5.0;
+    function rackPt(lx, ly, lz, o) { P0[o] = ROX + lx * RDX - lz * RDZ; P0[o + 1] = ly; P0[o + 2] = ROZ + lx * RDZ + lz * RDX; }
     function rnd() { return Math.random(); }
     function gauss() { var u = 1 - rnd(), v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
     var C = [];
@@ -1288,33 +1298,38 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
     for (var n = 0; n < N; n++) {
       var o = n * 3; R[n] = rnd();
       var q = rnd();
-      if (q < 0.84) { // a row of data-centre racks
-        var K = isMobile ? 5 : 7, RW = 1.25, RD = 1.6, RH = 5.4, GAP = 0.7;
-        var k = (rnd() * K) | 0, fx0 = (k - (K - 1) / 2) * (RW + GAP) - RW / 2, fy0 = -3.4, fz0 = -RD / 2, qq = rnd(), px0, py0, pz0;
-        if (qq < 0.30) { // frame edges
-          var e = (rnd() * 12) | 0, tt = rnd(), ax = e >> 2, cnr = e & 3;
-          var ex = [fx0, fx0 + RW], ey = [fy0, fy0 + RH], ez = [fz0, fz0 + RD];
-          if (ax === 0) { px0 = fx0 + tt * RW; py0 = ey[cnr & 1]; pz0 = ez[cnr >> 1]; }
-          else if (ax === 1) { py0 = fy0 + tt * RH; px0 = ex[cnr & 1]; pz0 = ez[cnr >> 1]; }
-          else { pz0 = fz0 + tt * RD; px0 = ex[cnr & 1]; py0 = ey[cnr >> 1]; }
-          px0 += gauss() * 0.012; py0 += gauss() * 0.012; pz0 += gauss() * 0.012;
-        } else if (qq < 0.74) { // server units on the front
-          var row = (rnd() * 14) | 0; if (row % 5 === 4) row -= 1;
-          px0 = fx0 + 0.16 + rnd() * (RW - 0.32); py0 = fy0 + 0.4 + row * 0.34 + gauss() * 0.01; pz0 = fz0 + RD + 0.02;
-        } else if (qq < 0.84) { // status lights
-          var lr = (R[n] * 14) | 0;
-          px0 = fx0 + RW - 0.2 + gauss() * 0.02; py0 = fy0 + 0.4 + lr * 0.34 + gauss() * 0.02; pz0 = fz0 + RD + 0.04;
-        } else { // sparse sides
-          py0 = fy0 + rnd() * RH;
-          if (rnd() < 0.5) { px0 = rnd() < 0.5 ? fx0 : fx0 + RW; pz0 = fz0 + rnd() * RD; } else { px0 = fx0 + rnd() * RW; pz0 = fz0; }
-        }
-        P0[o] = px0 * 0.92; P0[o + 1] = py0 * 0.92; P0[o + 2] = pz0 * 0.92;
-      } else if (q < 0.965) { // records rising off each rack top: the transfer to the cloud
-        var K2 = isMobile ? 5 : 7, k2 = (rnd() * K2) | 0, xk = (k2 - (K2 - 1) / 2) * 1.95, ln = ((rnd() * 3) | 0) - 1;
-        var s3 = Math.pow(rnd(), 1.6);
-        P0[o] = (xk + ln * 0.32 + s3 * s3 * 1.6 + gauss() * 0.03) * 0.92; P0[o + 1] = (2.1 + s3 * 3.6) * 0.92; P0[o + 2] = gauss() * 0.12;
-      } else { // loose dust
+      var lane0 = n % 14;
+      if (q < 0.04) { // loose dust
         var cc = C[(rnd() * C.length) | 0]; P0[o] = cc[0] * 1.4 + gauss() * 1.2; P0[o + 1] = cc[1] * 1.3 + gauss() * 1.0; P0[o + 2] = cc[2] + gauss() * 1.2;
+      } else if (q < 0.30) { // data leaving the rack tops: rises, turns, runs down the row and becomes the Silver lanes
+        var ks = lane0 % RK, lxs = (ks + 0.5) * (RW + RG), lzs = (lane0 < RK ? -0.3 : 0.3) + gauss() * 0.03;
+        rackPt(lxs, RY0 + RH, lzs, o);
+        S[n * 2] = 1 + 0.45 + (RK - 1 - ks) * 0.2 + (lane0 < RK ? 0 : 0.1) + gauss() * 0.02; S[n * 2 + 1] = lxs;
+      } else { // a long row of data-centre cabinets, seen at an angle
+        var k = (rnd() * RK) | 0, x0 = k * (RW + RG), x1 = x0 + RW, xm = (x0 + x1) / 2, y0 = RY0, y1 = RY0 + RH, zf = RD / 2, zb = -RD / 2, qq = rnd(), px0, py0, pz0;
+        if (qq < 0.30) { // cabinet edges, weighted to the front frame
+          var e = rnd() < 0.75 ? [6, 7, 6, 7, 2, 3][(rnd() * 6) | 0] : (rnd() * 12) | 0, tt = rnd(), ax = e >> 2, cnr = e & 3;
+          var ex = [x0, x1], ey = [y0, y1], ez = [zb, zf];
+          if (ax === 0) { px0 = x0 + tt * RW; py0 = ey[cnr & 1]; pz0 = ez[cnr >> 1]; }
+          else if (ax === 1) { py0 = y0 + tt * RH; px0 = ex[cnr & 1]; pz0 = ez[cnr >> 1]; }
+          else { pz0 = zb + tt * RD; px0 = ex[cnr & 1]; py0 = ey[cnr >> 1]; }
+          R[n] = 0.62 + rnd() * 0.14;
+        } else if (qq < 0.56) { // door frames: two doors per cabinet
+          if (rnd() < 0.7) { var vx = [x0 + 0.07, xm - 0.03, xm + 0.03, x1 - 0.07]; px0 = vx[(rnd() * 4) | 0]; py0 = y0 + 0.12 + rnd() * (RH - 0.24); }
+          else { px0 = x0 + 0.07 + rnd() * (RW - 0.14); py0 = rnd() < 0.5 ? y0 + 0.12 : y1 - 0.12; }
+          pz0 = zf + 0.01; R[n] = 0.6 + rnd() * 0.16;
+        } else if (qq < 0.86) { // server units behind the glass
+          var nr = 11 + (k * 3) % 5, row = (rnd() * nr) | 0, dr = rnd() < 0.5 ? 0 : 1, dx0 = dr ? xm + 0.14 : x0 + 0.17, dw = (RW / 2 - 0.31) * (0.45 + 0.55 * (((row * 7 + k * 3 + dr) % 5) / 4));
+          px0 = dx0 + rnd() * dw; py0 = y0 + 0.45 + (row + 0.5) * (RH - 0.9) / nr + gauss() * 0.008; pz0 = zf - 0.03;
+        } else if (qq < 0.93) { // status lights
+          var nl = 11 + (k * 3) % 5, lr = (rnd() * nl) | 0, ld = rnd() < 0.5;
+          px0 = (ld ? xm + 0.17 : x0 + 0.2) + gauss() * 0.012; py0 = y0 + 0.45 + (lr + 0.5) * (RH - 0.9) / nl + gauss() * 0.012; pz0 = zf - 0.01;
+        } else if (qq < 0.97) { // tops
+          px0 = x0 + rnd() * RW; py0 = y1; pz0 = zb + rnd() * RD;
+        } else { // the near end panel
+          px0 = 0; py0 = y0 + rnd() * RH; pz0 = zb + rnd() * RD;
+        }
+        rackPt(px0 + gauss() * 0.008, py0 + gauss() * 0.008, pz0 + gauss() * 0.008, o);
       }
       var L = 14, lane = n % L;
       P1[o] = rnd() * 36 - 18; P1[o + 1] = (lane - (L - 1) / 2) * 0.42 + gauss() * 0.035; P1[o + 2] = Math.sin(lane * 1.7) * 1.6 + gauss() * 0.035;
@@ -1337,7 +1352,7 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
       var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
       gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
     }
-    attr('aP0', P0, 3); attr('aP1', P1, 3); attr('aP2', P2, 3); attr('aP3', P3, 3); attr('aR', R, 1);
+    attr('aP0', P0, 3); attr('aP1', P1, 3); attr('aP2', P2, 3); attr('aP3', P3, 3); attr('aR', R, 1); attr('aS', S, 2);
     var U = {};
     ['uModel', 'uView', 'uProj', 'uTime', 'uMix', 'uAlpha', 'uSize', 'uPixel', 'uMouse'].forEach(function (k) { U[k] = gl.getUniformLocation(prog, k); });
 
@@ -1387,11 +1402,11 @@ footer a { color: var(--muted); text-decoration: none; } footer a:hover { color:
         if (!reduce) spin += dt * (0.07 + wGold * 0.12) * (1 - pull) * (1 - w0);
         var nearest = Math.round(spin / (Math.PI * 2)) * Math.PI * 2;
         spin += (nearest - spin) * Math.min(1, dt * 2.5) * pull;
-        cs.rx += ((0.12 + wGold * 0.42) - cs.rx) * Math.min(1, dt * 2);
+        cs.rx += ((0.12 + wGold * 0.42 - Math.max(0, 1 - cs.mix) * 0.1) - cs.rx) * Math.min(1, dt * 2);
         var nx = (mx / innerWidth) * 2 - 1, ny = (my / innerHeight) * 2 - 1;
         cs.mxw += (nx - cs.mxw) * Math.min(1, dt * 3); cs.myw += (ny - cs.myw) * Math.min(1, dt * 3);
-        var ry = spin + cs.mxw * 0.22 + (reduce ? 0 : Math.sin(t * 0.3) * 0.25 * wMed) + w0 * (-0.32 + (reduce ? 0 : Math.sin(t * 0.22) * 0.16));
-        var rx = cs.rx + cs.myw * 0.12;
+        var ry = spin + cs.mxw * (0.22 - w0 * 0.14) + (reduce ? 0 : Math.sin(t * 0.3) * 0.25 * wMed) + w0 * (reduce ? 0 : Math.sin(t * 0.2) * 0.04);
+        var rx = cs.rx + cs.myw * (0.12 - Math.max(0, 1 - cs.mix) * 0.08);
         var model = mul(trans(cs.x, 0, 0), mul(rotX(rx), mul(rotY(ry), scl(scale))));
         var halfH = Math.tan(FOV / 2) * CAMZ;
         gl.uniformMatrix4fv(U.uModel, false, model);
