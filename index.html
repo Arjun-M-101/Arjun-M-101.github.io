@@ -312,6 +312,17 @@ header.nav.solid { background: rgba(var(--ink-rgb),.72); backdrop-filter: blur(1
 .shot:first-child { grid-row: span 2; }
 .shot img { width: 100%; height: 100%; object-fit: cover; object-position: top left; transition: transform 1.2s var(--ease), filter .6s; filter: saturate(.85) brightness(.92); }
 .shot.contain img { object-fit: contain; background: var(--deep); }
+/* light and dark screenshots: both are in the page; the theme picks one (the theme switch itself animates the change) */
+.shot img { transition: transform 1.2s var(--ease), filter .6s, opacity .6s var(--ease); }
+.shot.pair img { position: absolute; inset: 0; }
+.shot img.lt { opacity: 0; }
+:root[data-theme="light"] .shot img.lt { opacity: 1; }
+:root[data-theme="light"] .shot.pair img.dk { opacity: 0; }
+.shot figcaption .lt { display: none; }
+:root[data-theme="light"] .shot figcaption .lt { display: inline; }
+:root[data-theme="light"] .shot figcaption .dk { display: none; }
+:root[data-theme="light"] .shot img { filter: saturate(.95) brightness(.99); }
+:root[data-theme="light"] .shot:hover img { filter: none; }
 .shot:hover img { transform: scale(1.04); filter: none; }
 .shot figcaption { position: absolute; left: 10px; bottom: 10px; right: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: .04em;
   background: rgba(var(--ink-rgb),.82); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; backdrop-filter: blur(6px); }
@@ -820,10 +831,10 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
         <div class="evidence">
           <div class="cap"><span>Evidence from the live AWS run</span><span>Click to enlarge</span></div>
           <div class="shots">
-            <button class="shot contain" data-full="img/tel-arch.webp" data-cap="Architecture: one CloudFormation stack, 30 resources"><img src="img/tel-arch.webp" alt="Telemetry architecture diagram" loading="lazy"><figcaption>Architecture</figcaption></button>
+            <button class="shot contain pair" data-full="img/tel-arch.webp" data-cap="Architecture: one CloudFormation stack, 30 resources" data-full-light="img/tel-arch-light.webp"><img class="dk" src="img/tel-arch.webp" alt="Telemetry architecture diagram" loading="lazy" style="background:#06142b"><img class="lt" src="img/tel-arch-light.webp" alt="" aria-hidden="true" loading="lazy" style="background:#fefefe"><figcaption>Architecture</figcaption></button>
             <button class="shot" data-full="img/tel-dashboard.webp" data-cap="CloudWatch dashboard with live data and alarm status"><img src="img/tel-dashboard.webp" alt="CloudWatch dashboard" loading="lazy"><figcaption>CloudWatch dashboard</figcaption></button>
             <button class="shot" data-full="img/tel-alerts.webp" data-cap="Low-tyre alert e-mails from SNS during a simulated slow leak"><img src="img/tel-alerts.webp" alt="SNS low tyre alert e-mails" loading="lazy"><figcaption>Low-tyre alerts</figcaption></button>
-            <button class="shot contain" data-full="img/tel-chatbot.webp" data-cap="Chatbot: Gemini picks the lowest_tyre query and answers"><img src="img/tel-chatbot.webp" alt="Chatbot answer in the terminal" loading="lazy"><figcaption>Chatbot answer</figcaption></button>
+            <button class="shot" data-full="img/tel-chatbot.webp" data-cap="Chatbot: Gemini picks the lowest_tyre query and answers"><img class="dk" src="img/tel-chatbot-frame.webp" alt="Chatbot answer in the terminal" loading="lazy"><figcaption>Chatbot answer</figcaption></button>
             <button class="shot" data-full="img/tel-spoof.webp" data-cap="Spoofing test: CAR-101 publishing to CAR-102's topic is rejected"><img src="img/tel-spoof.webp" alt="Device certificate spoofing test" loading="lazy"><figcaption>Spoof test rejected</figcaption></button>
           </div>
         </div>
@@ -870,10 +881,10 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
         <div class="evidence">
           <div class="cap"><span>Evidence from the live AWS run</span><span>Click to enlarge</span></div>
           <div class="shots">
-            <button class="shot contain" data-full="img/lh-arch.webp" data-cap="Architecture: event-driven Bronze, Silver, Gold on AWS"><img src="img/lh-arch.webp" alt="Lakehouse architecture diagram" loading="lazy"><figcaption>Architecture</figcaption></button>
-            <button class="shot contain" data-full="img/lh-stepfn.webp" data-cap="Step Functions run that succeeded, including the DQ gate branch"><img src="img/lh-stepfn.webp" alt="Step Functions graph" loading="lazy"><figcaption>Step Functions run</figcaption></button>
-            <button class="shot contain" data-full="img/lh-quicksight.webp" data-cap="QuickSight: total views by category from the Gold table"><img src="img/lh-quicksight.webp" alt="QuickSight bar chart" loading="lazy"><figcaption>QuickSight dashboard</figcaption></button>
-            <button class="shot contain" data-full="img/lh-dbt.webp" data-cap="dbt lineage from Gold to the fact model"><img src="img/lh-dbt.webp" alt="dbt lineage graph" loading="lazy"><figcaption>dbt lineage</figcaption></button>
+            <button class="shot contain pair" data-full="img/lh-arch.webp" data-cap="Architecture: event-driven Bronze, Silver, Gold on AWS" data-full-light="img/lh-arch-light.webp"><img class="dk" src="img/lh-arch.webp" alt="Lakehouse architecture diagram" loading="lazy" style="background:#050c1a"><img class="lt" src="img/lh-arch-light.webp" alt="" aria-hidden="true" loading="lazy" style="background:#fefefe"><figcaption>Architecture</figcaption></button>
+            <button class="shot" data-full="img/lh-stepfn.webp" data-cap="Step Functions run that succeeded, including the DQ gate branch"><img class="dk" src="img/lh-stepfn-frame.webp" alt="Step Functions graph" loading="lazy"><figcaption>Step Functions run</figcaption></button>
+            <button class="shot" data-full="img/lh-quicksight.webp" data-cap="QuickSight: total views by category from the Gold table"><img class="dk" src="img/lh-quicksight-frame.webp" alt="QuickSight bar chart" loading="lazy"><figcaption>QuickSight dashboard</figcaption></button>
+            <button class="shot" data-full="img/lh-dbt.webp" data-cap="dbt lineage from Gold to the fact model"><img class="dk" src="img/lh-dbt-frame.webp" alt="dbt lineage graph" loading="lazy"><figcaption>dbt lineage</figcaption></button>
             <button class="shot" data-full="img/lh-iceberg.webp" data-cap="Athena querying the Iceberg table's snapshot history"><img src="img/lh-iceberg.webp" alt="Athena Iceberg history query" loading="lazy"><figcaption>Iceberg time travel</figcaption></button>
           </div>
         </div>
@@ -1063,11 +1074,11 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
       <div class="evidence">
         <div class="cap"><span>Evidence from local runs on my laptop</span><span>Click to enlarge</span></div>
         <div class="shots">
-          <button class="shot contain" data-full="img/sf-arch.webp" data-cap="Architecture: one approved spec, a local engine and an AWS target"><img src="img/sf-arch.webp" alt="SpecFlow architecture diagram" loading="lazy"><figcaption>Architecture</figcaption></button>
-          <button class="shot" data-full="img/sf-plan.webp" data-cap="Plan planned by Gemini through tool use, validated before approval"><img src="img/sf-plan.webp" alt="SpecFlow plan screen with AI-planned steps" loading="lazy"><figcaption>AI-planned spec</figcaption></button>
-          <button class="shot" data-full="img/sf-run.webp" data-cap="Batch run on real Kaggle data: 78,301 rows in, 73,357 clean, 4,944 quarantined"><img src="img/sf-run.webp" alt="SpecFlow run monitor" loading="lazy"><figcaption>Run and reconciliation</figcaption></button>
-          <button class="shot" data-full="img/sf-dashboard.webp" data-cap="Dashboard generated from the approved spec"><img src="img/sf-dashboard.webp" alt="SpecFlow auto-generated dashboard" loading="lazy"><figcaption>Auto dashboard</figcaption></button>
-          <button class="shot" data-full="img/sf-stream.webp" data-cap="Stream replayed after a checkpoint reset: 378 merged, 0 new rows, Silver unchanged at 387"><img src="img/sf-stream.webp" alt="SpecFlow live stream after replay" loading="lazy"><figcaption>Replay-safe stream</figcaption></button>
+          <button class="shot contain pair" data-full="img/sf-arch.webp" data-cap="Architecture: one approved spec, a local engine and an AWS target" data-full-light="img/sf-arch-light.webp"><img class="dk" src="img/sf-arch.webp" alt="SpecFlow architecture diagram" loading="lazy" style="background:#0a1020"><img class="lt" src="img/sf-arch-light.webp" alt="" aria-hidden="true" loading="lazy" style="background:#ffffff"><figcaption>Architecture</figcaption></button>
+          <button class="shot pair" data-full="img/sf-plan.webp" data-cap="Plan planned by Gemini through tool use, validated before approval" data-full-light="img/sf-plan-light.webp" data-cap-light="Plan on the real Kaggle files in light mode: every step with its reason, validated before approval"><img class="dk" src="img/sf-plan.webp" alt="SpecFlow plan screen with AI-planned steps" loading="lazy"><img class="lt" src="img/sf-plan-light.webp" alt="" aria-hidden="true" loading="lazy"><figcaption><span class="dk">AI-planned spec</span><span class="lt">Planned spec</span></figcaption></button>
+          <button class="shot pair" data-full="img/sf-run.webp" data-cap="Batch run on real Kaggle data: 78,301 rows in, 73,357 clean, 4,944 quarantined" data-full-light="img/sf-run-light.webp"><img class="dk" src="img/sf-run.webp" alt="SpecFlow run monitor" loading="lazy"><img class="lt" src="img/sf-run-light.webp" alt="" aria-hidden="true" loading="lazy"><figcaption>Run and reconciliation</figcaption></button>
+          <button class="shot pair" data-full="img/sf-dashboard.webp" data-cap="Dashboard generated from the approved spec" data-full-light="img/sf-dashboard-light.webp"><img class="dk" src="img/sf-dashboard.webp" alt="SpecFlow auto-generated dashboard" loading="lazy"><img class="lt" src="img/sf-dashboard-light.webp" alt="" aria-hidden="true" loading="lazy"><figcaption>Auto dashboard</figcaption></button>
+          <button class="shot pair" data-full="img/sf-stream.webp" data-cap="Stream replayed after a checkpoint reset: 378 merged, 0 new rows, Silver unchanged at 387" data-full-light="img/sf-stream-light.webp" data-cap-light="Stream replayed after a checkpoint reset: 373 merged, 0 new rows, Silver unchanged at 393"><img class="dk" src="img/sf-stream.webp" alt="SpecFlow live stream after replay" loading="lazy"><img class="lt" src="img/sf-stream-light.webp" alt="" aria-hidden="true" loading="lazy"><figcaption>Replay-safe stream</figcaption></button>
         </div>
       </div>
       <div class="evidence">
@@ -1085,7 +1096,7 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
 <span class="o">✓</span> stateful live layer = exact Gold
 <span class="o">4 passed</span> <span class="m">· full suite: 101 passed</span></pre>
           </div>
-          <button class="shot contain" data-full="img/sf-lineage.webp" data-cap="Lineage tab on the real Kaggle data: every column from source to Silver to Gold, and every step that sends rows to quarantine"><img src="img/sf-lineage.webp" alt="SpecFlow column lineage tab" loading="lazy"><figcaption>Column lineage</figcaption></button>
+          <button class="shot pair" data-full="img/sf-lineage.webp" data-cap="Lineage tab on the real Kaggle data: every column from source to Silver to Gold, and every step that sends rows to quarantine" data-full-light="img/sf-lineage-light.webp"><img class="dk" src="img/sf-lineage-frame.webp" alt="SpecFlow column lineage tab" loading="lazy" style="object-position:top center"><img class="lt" src="img/sf-lineage-light-frame.webp" alt="" aria-hidden="true" loading="lazy" style="object-position:top center"><figcaption>Column lineage</figcaption></button>
         </div>
       </div>
 
@@ -1317,10 +1328,18 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
 
   /* ---------------- lightbox ---------------- */
   var lb = document.getElementById('lb'), lbImg = document.getElementById('lbImg'), lbCap = document.getElementById('lbCap'), lastFocus = null;
+  // A screenshot opens in the current theme when a light version exists, and follows a theme switch while open.
+  function lbFill(btn) {
+    var light = root.getAttribute('data-theme') === 'light';
+    var src = (light && btn.dataset.fullLight) || btn.dataset.full, cap = (light && btn.dataset.capLight) || btn.dataset.cap;
+    if (lbImg.getAttribute('src') !== src) lbImg.src = src;
+    lbImg.alt = cap; lbCap.textContent = cap;
+  }
   function openLb(btn) {
-    lastFocus = btn; lbImg.src = btn.dataset.full; lbImg.alt = btn.dataset.cap; lbCap.textContent = btn.dataset.cap;
+    lastFocus = btn; lbFill(btn);
     lb.hidden = false; document.body.style.overflow = 'hidden'; document.getElementById('lbClose').focus();
   }
+  new MutationObserver(function () { if (!lb.hidden && lastFocus) lbFill(lastFocus); }).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
   function closeLb() { lb.hidden = true; document.body.style.overflow = ''; if (lastFocus) lastFocus.focus(); }
   document.querySelectorAll('.shot').forEach(function (b) { b.addEventListener('click', function () { openLb(b); }); });
   document.getElementById('lbClose').addEventListener('click', closeLb);
