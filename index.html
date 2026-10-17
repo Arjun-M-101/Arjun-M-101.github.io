@@ -1405,7 +1405,7 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
       'attribute vec3 aP0; attribute vec3 aP1; attribute vec3 aP2; attribute vec3 aP3; attribute float aR; attribute vec2 aS;',
       'uniform mat4 uModel; uniform mat4 uView; uniform mat4 uProj;',
       'uniform float uTime; uniform float uMix; uniform float uAlpha; uniform float uSize; uniform float uPixel; uniform vec2 uMouse;',
-      'varying vec3 vColor; varying float vA;',
+      'varying vec3 vColor; varying float vA; varying float vS;',
       'void main(){',
       '  float fx = mod(aP1.x + uTime*(0.9 + aR*1.1) + 18.0, 36.0) - 18.0;',
       '  vec3 p0 = aP0 + vec3(sin(uTime*0.55 + aR*40.0), cos(uTime*0.47 + aR*23.0), sin(uTime*0.41 + aR*11.0))*0.01;',
@@ -1423,9 +1423,9 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
       '  float d = aR*0.45; float t = smoothstep(d, d + 0.55, f);',
       '  vec3 pos; vec3 col;',
       '  float vf = 1.0;',
-      '  if (seg < 0.5) { pos = mix(p0, p1, t); col = mix(c0, cS, t); vf = mix(vis, 1.0, t); }',
-      '  else if (seg < 1.5) { pos = mix(p1, p2, t); col = mix(cS, cG, t); }',
-      '  else { pos = mix(p2, p3, t); col = mix(cG, cM, t); }',
+      '  if (seg < 0.5) { pos = mix(p0, p1, t); col = mix(c0, cS, t); vf = mix(vis, 1.0, t); vS = t; }',
+      '  else if (seg < 1.5) { pos = mix(p1, p2, t); col = mix(cS, cG, t); vS = 1.0 - t; }',
+      '  else { pos = mix(p2, p3, t); col = mix(cG, cM, t); vS = 0.0; }',
       '  vec4 world = uModel * vec4(pos, 1.0);',
       '  vec2 dm = world.xy - uMouse; float dist = length(dm);',
       '  world.xy += normalize(dm + 0.0001) * smoothstep(2.8, 0.0, dist) * 0.9;',
@@ -1437,12 +1437,22 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
       '}'
     ].join('\n');
     var FS = [
-      'precision mediump float; varying vec3 vColor; varying float vA; uniform float uLight; uniform float uInk;',
+      'precision mediump float; varying vec3 vColor; varying float vA; varying float vS; uniform float uLight; uniform float uInk; uniform float uHalo;',
       'void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard;',
       '  float a = pow(smoothstep(0.5, 0.0, d), 1.7);',
       // night: points add light to black. paper: the same points take light away (reverse-subtract blend),
       // so dense areas darken towards the metal colour instead of glowing.
-      '  if (uLight > 0.5) { gl_FragColor = vec4((vec3(1.0) - vColor*0.55) * a * vA * uInk, 1.0); }',
+      '  if (uLight > 0.5) {',
+      // paper: a soft halo in the vivid metal colour (taking away only its complement keeps the hue),
+      // plus a crisp core in a deep shade of the same metal for clean geometry
+      '    float core = smoothstep(0.25, 0.13, d);',
+      '    float halo = pow(smoothstep(0.5, 0.0, d), 1.5);',
+      '    float l = dot(vColor, vec3(0.299, 0.587, 0.114));',
+      '    vec3 vivid = clamp(mix(vec3(l), vColor, 2.3), 0.0, 1.0);',
+      // silver has almost no hue to amplify: on paper it becomes a clear steel blue
+      '    vivid = mix(vivid, vec3(0.34, 0.58, 0.86) * (0.8 + l * 0.35), vS);',
+      '    vec3 sub = (vec3(1.0) - vivid) * halo * uHalo + (vec3(1.0) - vivid * 0.34) * core * uInk;',
+      '    gl_FragColor = vec4(sub * vA, 1.0); }',
       '  else { gl_FragColor = vec4(vColor * (0.75 + a*1.25) * a * vA, 1.0); } }'
     ].join('\n');
     function sh(type, src) {
@@ -1532,7 +1542,7 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
     }
     attr('aP0', P0, 3); attr('aP1', P1, 3); attr('aP2', P2, 3); attr('aP3', P3, 3); attr('aR', R, 1); attr('aS', S, 2);
     var U = {};
-    ['uModel', 'uView', 'uProj', 'uTime', 'uMix', 'uAlpha', 'uSize', 'uPixel', 'uMouse', 'uLight', 'uInk'].forEach(function (k) { U[k] = gl.getUniformLocation(prog, k); });
+    ['uModel', 'uView', 'uProj', 'uTime', 'uMix', 'uAlpha', 'uSize', 'uPixel', 'uMouse', 'uLight', 'uInk', 'uHalo'].forEach(function (k) { U[k] = gl.getUniformLocation(prog, k); });
 
     // column-major mat4 helpers
     function mul(a, b) { var o = new Float32Array(16);
@@ -1547,12 +1557,14 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
     var FOV = 42 * Math.PI / 180, CAMZ = 19, scale = 1, aspect = 1;
     gl.uniformMatrix4fv(U.uView, false, trans(0, 0, -CAMZ));
     gl.uniform1f(U.uPixel, dpr);
-    gl.uniform1f(U.uSize, isMobile ? 3.2 : 3.0);
     gl.disable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+    var LIGHT = { ink: 0.85, halo: 0.95 };
     function setTheme(light) {
       gl.uniform1f(U.uLight, light ? 1 : 0);
-      gl.uniform1f(U.uInk, isMobile ? 1.25 : 1.1);
+      var base = isMobile ? 3.2 : 3.0;
+      gl.uniform1f(U.uSize, light ? base * 2.1 : base);          // paper dots are larger so the colour halo shows
+      gl.uniform1f(U.uInk, LIGHT.ink); gl.uniform1f(U.uHalo, LIGHT.halo);
       gl.blendEquation(light ? gl.FUNC_REVERSE_SUBTRACT : gl.FUNC_ADD);
       if (light) gl.clearColor(244 / 255, 241 / 255, 234 / 255, 1); else gl.clearColor(9 / 255, 13 / 255, 17 / 255, 1);
     }
