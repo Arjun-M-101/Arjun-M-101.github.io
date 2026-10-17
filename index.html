@@ -242,7 +242,7 @@ header.nav.solid { background: rgba(var(--ink-rgb),.72); backdrop-filter: blur(1
 .method h2 { font-size: clamp(2rem, 4.6vw, 4.2rem); }
 .stage-label { align-self: end; justify-self: end; text-align: right; font-family: var(--mono); font-size: 12px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
 .stage-label b { display: block; font-family: var(--display); font-size: clamp(3rem, 8vw, 7rem); letter-spacing: -.02em; line-height: 1; font-weight: 850;
-  font-variation-settings: "wdth" 120; color: transparent; -webkit-text-stroke: 1px rgba(var(--text-rgb),.35); }
+  font-variation-settings: "wdth" 120; color: transparent; -webkit-text-stroke: 1.4px rgba(var(--text-rgb),.55); }
 @media (max-width: 860px) {
   .method { height: 300svh; }
   .method .stage { align-items: flex-end; padding-bottom: 28px; }
@@ -358,11 +358,12 @@ header.nav.solid { background: rgba(var(--ink-rgb),.72); backdrop-filter: blur(1
 @media (max-width: 860px) { .mini-grid { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- stack ---------- */
-.marquee { overflow: hidden; border-block: 1px solid var(--line); padding-block: 22px; margin-top: clamp(40px, 6vh, 64px); background: rgba(var(--ink-rgb),.6);
+.marquee { overflow: hidden; border-block: 1px solid var(--line); padding-block: 22px; margin-top: clamp(40px, 6vh, 64px); background: rgba(var(--ink-rgb),.82);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
 .marquee .track { display: flex; gap: 46px; width: max-content; animation: slide 46s linear infinite; }
 .marquee span { font-family: var(--display); font-weight: 800; font-size: clamp(1.6rem, 3.4vw, 2.8rem); text-transform: uppercase; letter-spacing: -.01em;
-  font-variation-settings: "wdth" 118; white-space: nowrap; color: transparent; -webkit-text-stroke: 1px rgba(var(--text-rgb),.5); }
+  font-variation-settings: "wdth" 118; white-space: nowrap; color: transparent; -webkit-text-stroke: 1.7px rgba(var(--text-rgb),.8); }
+:root[data-theme="light"] .marquee span:not(:nth-child(3n+1)) { -webkit-text-stroke: 1.6px rgba(var(--text-rgb),.72); }
 .marquee span:nth-child(3n+1) { color: var(--text); -webkit-text-stroke: 0; }
 @keyframes slide { to { transform: translateX(-50%); } }
 .describe { margin-top: 36px; border: 1px solid var(--line); border-radius: 18px; background: rgba(var(--ink-rgb),.88); overflow: hidden; }
