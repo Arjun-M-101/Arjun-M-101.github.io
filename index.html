@@ -1402,10 +1402,10 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
 
     var VS_RA = 0.62;
     var VS = [
-      'attribute vec3 aP0; attribute vec3 aP1; attribute vec3 aP2; attribute vec3 aP3; attribute float aR; attribute vec2 aS;',
+      'attribute vec3 aP0; attribute vec3 aP1; attribute vec3 aP2; attribute vec3 aP3; attribute float aR; attribute vec2 aS; attribute vec4 aK;',
       'uniform mat4 uModel; uniform mat4 uView; uniform mat4 uProj;',
       'uniform float uTime; uniform float uMix; uniform float uAlpha; uniform float uSize; uniform float uPixel; uniform vec2 uMouse;',
-      'varying vec3 vColor; varying float vA; varying float vS;',
+      'varying vec3 vColor; varying float vA; varying float vS; varying float vW;',
       'void main(){',
       '  float fx = mod(aP1.x + uTime*(0.9 + aR*1.1) + 18.0, 36.0) - 18.0;',
       '  vec3 p0 = aP0 + vec3(sin(uTime*0.55 + aR*40.0), cos(uTime*0.47 + aR*23.0), sin(uTime*0.41 + aR*11.0))*0.01;',
@@ -1416,28 +1416,30 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
       '  vec3 p1 = vec3(fx, aP1.y + sin(fx*0.32 + aP1.z*2.0 + uTime*0.4)*0.55, aP1.z);',
       '  vec3 p2 = aP2 + vec3(0.0, sin(uTime*0.9 + aP2.x*0.6 + aP2.z*0.5)*0.06, 0.0);',
       '  vec3 p3 = aP3 * (1.0 + sin(uTime*1.2 - length(aP3.xy)*1.4)*0.012);',
-      '  vec3 cB = vec3(0.80,0.52,0.33); vec3 cS = vec3(0.70,0.77,0.82); vec3 cG = vec3(0.92,0.72,0.36); vec3 cM = vec3(1.0,0.86,0.55);',
-      '  vec3 c0 = mix(cB, vec3(0.45,0.50,0.55), step(0.78, aR));',
+      '  vec3 cB = vec3(0.80,0.52,0.33); vec3 cS = vec3(0.70,0.77,0.82); vec3 cG = vec3(0.92,0.72,0.36); vec3 cM = vec3(1.0,0.79,0.43);',
+      '  vec3 c0 = mix(cB, cM, aK.w);',   // status LEDs burn warm white-gold
       '  float m = clamp(uMix, 0.0, 3.0);',
       '  float seg = min(floor(m), 2.0); float f = m - seg;',
       '  float d = aR*0.45; float t = smoothstep(d, d + 0.55, f);',
       '  vec3 pos; vec3 col;',
       '  float vf = 1.0;',
-      '  if (seg < 0.5) { pos = mix(p0, p1, t); col = mix(c0, cS, t); vf = mix(vis, 1.0, t); vS = t; }',
-      '  else if (seg < 1.5) { pos = mix(p1, p2, t); col = mix(cS, cG, t); vS = 1.0 - t; }',
-      '  else { pos = mix(p2, p3, t); col = mix(cG, cM, t); vS = 0.0; }',
+      '  float w;',   // how much this point matters in the current shape: frame edges > mesh and fill
+      '  if (seg < 0.5) { pos = mix(p0, p1, t); col = mix(c0, cS, t); vf = mix(vis, 1.0, t); vS = t; w = mix(aK.x, 1.0, t); }',
+      '  else if (seg < 1.5) { pos = mix(p1, p2, t); col = mix(cS, cG, t); vS = 1.0 - t; w = mix(1.0, aK.y, t); }',
+      '  else { pos = mix(p2, p3, t); col = mix(cG, cM, t); vS = 0.0; w = mix(aK.y, aK.z, t); }',
+      '  vW = w;',
       '  vec4 world = uModel * vec4(pos, 1.0);',
       '  vec2 dm = world.xy - uMouse; float dist = length(dm);',
       '  world.xy += normalize(dm + 0.0001) * smoothstep(2.8, 0.0, dist) * 0.9;',
       '  vec4 mv = uView * world;',
       '  gl_Position = uProj * mv;',
-      '  gl_PointSize = uSize * (0.5 + aR*0.95) * uPixel * (14.0 / -mv.z);',
-      '  vColor = col * (0.75 + fract(aR*7.31)*0.5);',
-      '  vA = uAlpha * (0.5 + fract(aR*3.17)*0.7) * vf;',
+      '  gl_PointSize = uSize * (0.62 + aR*0.62) * mix(1.0, w, 0.55) * uPixel * (14.0 / -mv.z);',
+      '  vColor = col * (0.86 + fract(aR*7.31)*0.28);',
+      '  vA = uAlpha * (0.72 + fract(aR*3.17)*0.42) * vf;',
       '}'
     ].join('\n');
     var FS = [
-      'precision mediump float; varying vec3 vColor; varying float vA; varying float vS; uniform float uLight; uniform float uInk; uniform float uHalo;',
+      'precision mediump float; varying vec3 vColor; varying float vA; varying float vS; varying float vW; uniform float uLight; uniform float uInk; uniform float uHalo; uniform float uGlow;',
       'void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard;',
       '  float a = pow(smoothstep(0.5, 0.0, d), 1.7);',
       // night: points add light to black. paper: the same points take light away (reverse-subtract blend),
@@ -1452,8 +1454,9 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
       // silver has almost no hue to amplify: on paper it becomes a clear steel blue
       '    vivid = mix(vivid, vec3(0.34, 0.58, 0.86) * (0.8 + l * 0.35), vS);',
       '    vec3 sub = (vec3(1.0) - vivid) * halo * uHalo + (vec3(1.0) - vivid * 0.34) * core * uInk;',
-      '    gl_FragColor = vec4(sub * vA, 1.0); }',
-      '  else { gl_FragColor = vec4(vColor * (0.75 + a*1.25) * a * vA, 1.0); } }'
+      '    gl_FragColor = vec4(sub * vA * vW, 1.0); }',
+      '  else { float core = smoothstep(0.2, 0.08, d);',
+      '    gl_FragColor = vec4(vColor * ((0.75 + a*1.25) * a + core*0.45) * vA * vW * uGlow, 1.0); } }'
     ].join('\n');
     function sh(type, src) {
       var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
@@ -1468,81 +1471,134 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
 
     var N = isMobile ? 7000 : 14000;
     var P0 = new Float32Array(N * 3), P1 = new Float32Array(N * 3), P2 = new Float32Array(N * 3), P3 = new Float32Array(N * 3), R = new Float32Array(N);
+    var K = new Float32Array(N * 4);  // per point: weight as cabinet, as gold bar, as medallion; 1 = status LED
     // cabinet row layout: local x runs along the row, local z is out of the cabinet fronts
     var S = new Float32Array(N * 2), RK = isMobile ? 7 : 10, RW = 1.3, RD = 2.1, RH = 7.0, RG = 0.32, RY0 = -3.8;
     var RA = 0.62, RDX = Math.cos(RA), RDZ = -Math.sin(RA), ROX = isMobile ? -1.9 : -3.4, ROZ = isMobile ? 6.5 : 5.0;
     function rackPt(lx, ly, lz, o) { P0[o] = ROX + lx * RDX - lz * RDZ; P0[o + 1] = ly; P0[o + 2] = ROZ + lx * RDZ + lz * RDX; }
     function rnd() { return Math.random(); }
     function gauss() { var u = 1 - rnd(), v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-    var C = [];
-    for (var c = 0; c < 18; c++) C.push([(rnd() * 2 - 1) * 8, (rnd() * 2 - 1) * 4.6, (rnd() * 2 - 1) * 4]);
-    var G = 9, sp = 1.05, bw = 0.62, bars = [], tot = 0;
+
+    // A shape is a set of real 3D edges (and single dots). sample(M) spreads M points evenly along the
+    // edges in proportion to length x density, so every edge is drawn and nothing is left half-built.
+    function Shape() { this.segs = []; this.dots = []; }
+    Shape.prototype.seg = function (a, b, dens, w, led) { this.segs.push([a, b, dens, w, led || 0]); };
+    Shape.prototype.rect = function (c, u, v, dens, w) {   // corner c, edge vectors u, v
+      var a = c, b = [c[0] + u[0], c[1] + u[1], c[2] + u[2]], d = [c[0] + v[0], c[1] + v[1], c[2] + v[2]];
+      var e = [b[0] + v[0], b[1] + v[1], b[2] + v[2]];
+      this.seg(a, b, dens, w); this.seg(d, e, dens, w); this.seg(a, d, dens, w); this.seg(b, e, dens, w);
+    };
+    Shape.prototype.dot = function (p, w, led) { this.dots.push([p[0], p[1], p[2], w, led || 0]); };
+    Shape.prototype.sample = function (M, jit) {
+      var out = this.dots.slice(0, M), rest = M - out.length, segs = this.segs, lens = [], tot = 0, i, j;
+      for (i = 0; i < segs.length; i++) { var s = segs[i], L = Math.hypot(s[1][0] - s[0][0], s[1][1] - s[0][1], s[1][2] - s[0][2]) * s[2]; lens.push(L); tot += L; }
+      var alloc = [], given = 0, fr = [];
+      for (i = 0; i < segs.length; i++) { var ex = lens[i] / tot * rest, n0 = Math.floor(ex); alloc.push(n0); given += n0; fr.push([ex - n0, i]); }
+      fr.sort(function (x, y) { return y[0] - x[0]; });
+      for (j = 0; given < rest; j++) { alloc[fr[j % fr.length][1]]++; given++; }
+      for (i = 0; i < segs.length; i++) {
+        var sg = segs[i], a = sg[0], b = sg[1], n = alloc[i], ph = rnd();
+        for (j = 0; j < n; j++) {
+          var tt = (j + ph) / n;
+          out.push([a[0] + (b[0] - a[0]) * tt + gauss() * jit, a[1] + (b[1] - a[1]) * tt + gauss() * jit, a[2] + (b[2] - a[2]) * tt + gauss() * jit, sg[3], sg[4]]);
+        }
+      }
+      for (i = out.length - 1; i > 0; i--) { j = (rnd() * (i + 1)) | 0; var tmp = out[i]; out[i] = out[j]; out[j] = tmp; }
+      return out;
+    };
+
+    // ---- 1. a row of data-centre cabinets: closed boxes, two perforated doors each, status LEDs,
+    //         back doors, both end panels, a kick plate and a cable tray running along the top
+    var cab = new Shape(), XE = RK * (RW + RG) - RG, cy0 = RY0, cy1 = RY0 + RH, zf = RD / 2, zb = -RD / 2;
+    for (var k = 0; k < RK; k++) {
+      var x0 = k * (RW + RG), x1 = x0 + RW, xm = (x0 + x1) / 2, ym = (cy0 + cy1) / 2;
+      cab.rect([x0, cy0, zf], [RW, 0, 0], [0, RH, 0], 1.35, 1.3);                         // front frame
+      cab.rect([x0, cy0, zb], [RW, 0, 0], [0, RH, 0], 0.85, 0.95);                        // back frame
+      [[x0, cy0], [x1, cy0], [x0, cy1], [x1, cy1]].forEach(function (q) { cab.seg([q[0], q[1], zb], [q[0], q[1], zf], 1.05, 1.05); });
+      var dl = [x0 + 0.07, xm - 0.025], dr = [xm + 0.025, x1 - 0.07], dy0 = cy0 + 0.22, dy1 = cy1 - 0.16;
+      [dl, dr].forEach(function (dx, side) {
+        cab.rect([dx[0], dy0, zf + 0.012], [dx[1] - dx[0], 0, 0], [0, dy1 - dy0, 0], 0.8, 0.85);    // door frame
+        var hx = side ? dx[0] + 0.07 : dx[1] - 0.07;                                                 // handle
+        cab.seg([hx, ym - 0.42, zf + 0.04], [hx, ym + 0.42, zf + 0.04], 2.4, 1.35);
+        for (var c = 1; c <= 4; c++) {                                                              // perforation columns
+          var px = dx[0] + (dx[1] - dx[0]) * c / 5;
+          cab.seg([px, dy0 + 0.28, zf + 0.006], [px, dy1 - 0.24, zf + 0.006], 0.42, 0.5);
+        }
+        var nr = 13 + (k * 3 + side) % 4;                                                           // status LEDs
+        for (var r = 0; r < nr; r++) {
+          if ((r * 7 + k * 3 + side * 5) % 3 === 0) continue;
+          var ly = dy0 + 0.45 + (r + 0.5) * (dy1 - dy0 - 0.8) / nr, lx = side ? dx[1] - 0.12 : dx[0] + 0.12;
+          cab.dot([lx, ly, zf + 0.03], 1.2, 1);
+        }
+      });
+      cab.rect([x0 + 0.08, cy0 + 0.2, zb - 0.012], [RW - 0.16, 0, 0], [0, RH - 0.36, 0], 0.45, 0.6);  // back door
+    }
+    [0, XE].forEach(function (ex) {                                                                  // end panels
+      [-0.55, 0, 0.55].forEach(function (zz) { cab.seg([ex, cy0 + 0.15, zz], [ex, cy1 - 0.15, zz], 0.6, 0.75); });
+      cab.seg([ex, ym, zb + 0.1], [ex, ym, zf - 0.1], 0.8, 0.8);
+    });
+    cab.seg([-0.05, cy0 - 0.14, zf - 0.04], [XE + 0.05, cy0 - 0.14, zf - 0.04], 0.9, 0.8);           // kick plate
+    var ty = cy1 + 0.34;                                                                             // cable tray
+    cab.seg([-0.3, ty, 0.42], [XE + 0.3, ty, 0.42], 1.1, 1.0); cab.seg([-0.3, ty, -0.42], [XE + 0.3, ty, -0.42], 1.1, 1.0);
+    for (var tx = -0.3; tx <= XE + 0.3; tx += 0.54) cab.seg([tx, ty, -0.42], [tx, ty, 0.42], 0.9, 0.8);
+
+    // ---- 3. gold bars: wireframe columns with level rings, standing on a floor grid
+    var barsS = new Shape(), G = 9, sp = 1.05, bw = 0.62, hb = bw / 2, base = -2.6;
     for (var i = 0; i < G; i++) for (var j = 0; j < G; j++) {
       var h = 0.5 + 4.1 * (0.5 + 0.5 * Math.sin(i * 0.72 + 1.3) * Math.cos(j * 0.58 - 0.4)) * (1 - 0.3 * Math.hypot(i - 4, j - 4) / 5.7);
-      bars.push({ x: (i - (G - 1) / 2) * sp, z: (j - (G - 1) / 2) * sp, h: h }); tot += h;
+      var bx = (i - (G - 1) / 2) * sp, bz = (j - (G - 1) / 2) * sp;
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (q) { barsS.seg([bx + q[0] * hb, base, bz + q[1] * hb], [bx + q[0] * hb, base + h, bz + q[1] * hb], 1.15, 1.15); });
+      barsS.rect([bx - hb, base + h, bz - hb], [bw, 0, 0], [0, 0, bw], 1.5, 1.35);
+      barsS.rect([bx - hb, base, bz - hb], [bw, 0, 0], [0, 0, bw], 0.6, 0.75);
+      for (var yy = base + 0.55; yy < base + h - 0.25; yy += 0.55) barsS.rect([bx - hb, yy, bz - hb], [bw, 0, 0], [0, 0, bw], 0.42, 0.6);
     }
-    var cum = [], acc = 0; bars.forEach(function (b) { acc += b.h / tot; cum.push(acc); });
-    function pickBar() { var r = rnd(); for (var k = 0; k < cum.length; k++) if (r <= cum[k]) return bars[k]; return bars[bars.length - 1]; }
+    for (var g = 0; g <= G; g++) {
+      var gp = (g - G / 2) * sp, ge = (G / 2) * sp + 0.2;
+      barsS.seg([gp, base, -ge], [gp, base, ge], 0.3, 0.5); barsS.seg([-ge, base, gp], [ge, base, gp], 0.3, 0.5);
+    }
+
+    // ---- 4. the medallion: a minted coin with rim depth, ticks, spokes and a hub
+    var med = new Shape();
+    function pol(r, a, z) { return [Math.cos(a) * r, Math.sin(a) * r, z]; }
+    function ring(r, z, dens, w) { var n = 120; for (var q = 0; q < n; q++) med.seg(pol(r, q / n * 6.2832, z), pol(r, (q + 1) / n * 6.2832, z), dens, w); }
+    ring(5.5, 0, 1.5, 1.05); ring(5.5, -0.34, 0.55, 0.62); ring(5.12, 0, 1.1, 0.85); ring(4.45, 0, 1.2, 0.9);
+    ring(1.3, 0, 1.5, 1.0); ring(0.72, 0, 1.2, 0.95);
+    for (var tk = 0; tk < 72; tk++) { var ta = tk / 72 * 6.2832; med.seg(pol(5.17, ta, 0), pol(5.45, ta, 0), tk % 6 ? 1.3 : 2.4, 0.85); }
+    for (var spk = 0; spk < 36; spk++) { var sa = spk / 36 * 6.2832; med.seg(pol(1.42, sa, 0), pol(4.36, sa, 0), 0.9, 0.8); }
+    var nField = Math.round(N * 0.16);
+    for (var fi = 0; fi < nField; fi++) { var fr2 = Math.sqrt(1.5 * 1.5 + rnd() * (4.3 * 4.3 - 1.5 * 1.5)); med.dot(pol(fr2, rnd() * 6.2832, gauss() * 0.04), 0.4, 0); }
+
+    var nS = Math.round(N * 0.22), nD = Math.round(N * 0.025);
+    var cabPts = cab.sample(N - nS - nD, 0.006), barPts = barsS.sample(N, 0.006), medPts = med.sample(N, 0.005);
+    var C = [];
+    for (var c2 = 0; c2 < 18; c2++) C.push([(rnd() * 2 - 1) * 8, (rnd() * 2 - 1) * 4.6, (rnd() * 2 - 1) * 4]);
     for (var n = 0; n < N; n++) {
-      var o = n * 3; R[n] = rnd();
-      var q = rnd();
+      var o = n * 3, o4 = n * 4; R[n] = rnd();
       var lane0 = n % 14;
-      if (q < 0.04) { // loose dust
+      if (n < nS) { // data leaving the rack tops: rises, turns, runs down the row and becomes the Silver lanes
+        var ks = lane0 % RK, lxs = ks * (RW + RG) + RW / 2, lzs = (lane0 < RK ? -0.3 : 0.3) + gauss() * 0.02;
+        rackPt(lxs, cy1, lzs, o);
+        S[n * 2] = 1 + 0.45 + (RK - 1 - ks) * 0.2 + (lane0 < RK ? 0 : 0.1) + gauss() * 0.012; S[n * 2 + 1] = lxs;
+        K[o4] = 1.0;
+      } else if (n < nS + nD) { // a little loose dust
         var cc = C[(rnd() * C.length) | 0]; P0[o] = cc[0] * 1.4 + gauss() * 1.2; P0[o + 1] = cc[1] * 1.3 + gauss() * 1.0; P0[o + 2] = cc[2] + gauss() * 1.2;
-      } else if (q < 0.30) { // data leaving the rack tops: rises, turns, runs down the row and becomes the Silver lanes
-        var ks = lane0 % RK, lxs = (ks + 0.5) * (RW + RG), lzs = (lane0 < RK ? -0.3 : 0.3) + gauss() * 0.03;
-        rackPt(lxs, RY0 + RH, lzs, o);
-        S[n * 2] = 1 + 0.45 + (RK - 1 - ks) * 0.2 + (lane0 < RK ? 0 : 0.1) + gauss() * 0.02; S[n * 2 + 1] = lxs;
-      } else { // a long row of data-centre cabinets, seen at an angle
-        var k = (rnd() * RK) | 0, x0 = k * (RW + RG), x1 = x0 + RW, xm = (x0 + x1) / 2, y0 = RY0, y1 = RY0 + RH, zf = RD / 2, zb = -RD / 2, qq = rnd(), px0, py0, pz0;
-        if (qq < 0.30) { // cabinet edges, weighted to the front frame
-          var e = rnd() < 0.75 ? [6, 7, 6, 7, 2, 3][(rnd() * 6) | 0] : (rnd() * 12) | 0, tt = rnd(), ax = e >> 2, cnr = e & 3;
-          var ex = [x0, x1], ey = [y0, y1], ez = [zb, zf];
-          if (ax === 0) { px0 = x0 + tt * RW; py0 = ey[cnr & 1]; pz0 = ez[cnr >> 1]; }
-          else if (ax === 1) { py0 = y0 + tt * RH; px0 = ex[cnr & 1]; pz0 = ez[cnr >> 1]; }
-          else { pz0 = zb + tt * RD; px0 = ex[cnr & 1]; py0 = ey[cnr >> 1]; }
-          R[n] = 0.62 + rnd() * 0.14;
-        } else if (qq < 0.56) { // door frames: two doors per cabinet
-          if (rnd() < 0.7) { var vx = [x0 + 0.07, xm - 0.03, xm + 0.03, x1 - 0.07]; px0 = vx[(rnd() * 4) | 0]; py0 = y0 + 0.12 + rnd() * (RH - 0.24); }
-          else { px0 = x0 + 0.07 + rnd() * (RW - 0.14); py0 = rnd() < 0.5 ? y0 + 0.12 : y1 - 0.12; }
-          pz0 = zf + 0.01; R[n] = 0.6 + rnd() * 0.16;
-        } else if (qq < 0.86) { // server units behind the glass
-          var nr = 11 + (k * 3) % 5, row = (rnd() * nr) | 0, dr = rnd() < 0.5 ? 0 : 1, dx0 = dr ? xm + 0.14 : x0 + 0.17, dw = (RW / 2 - 0.31) * (0.45 + 0.55 * (((row * 7 + k * 3 + dr) % 5) / 4));
-          px0 = dx0 + rnd() * dw; py0 = y0 + 0.45 + (row + 0.5) * (RH - 0.9) / nr + gauss() * 0.008; pz0 = zf - 0.03;
-        } else if (qq < 0.93) { // status lights
-          var nl = 11 + (k * 3) % 5, lr = (rnd() * nl) | 0, ld = rnd() < 0.5;
-          px0 = (ld ? xm + 0.17 : x0 + 0.2) + gauss() * 0.012; py0 = y0 + 0.45 + (lr + 0.5) * (RH - 0.9) / nl + gauss() * 0.012; pz0 = zf - 0.01;
-        } else if (qq < 0.97) { // tops
-          px0 = x0 + rnd() * RW; py0 = y1; pz0 = zb + rnd() * RD;
-        } else { // the near end panel
-          px0 = 0; py0 = y0 + rnd() * RH; pz0 = zb + rnd() * RD;
-        }
-        rackPt(px0 + gauss() * 0.008, py0 + gauss() * 0.008, pz0 + gauss() * 0.008, o);
+        K[o4] = 0.5;
+      } else {
+        var cp = cabPts[n - nS - nD]; rackPt(cp[0], cp[1], cp[2], o); K[o4] = cp[3]; K[o4 + 3] = cp[4];
       }
       var L = 14, lane = n % L;
-      P1[o] = rnd() * 36 - 18; P1[o + 1] = (lane - (L - 1) / 2) * 0.42 + gauss() * 0.035; P1[o + 2] = Math.sin(lane * 1.7) * 1.6 + gauss() * 0.035;
-      var b = pickBar(), face = rnd(), hx = bw / 2, base = -2.6, px, py, pz;
-      if (face < 0.38) { px = b.x + (rnd() < 0.5 ? -hx : hx); pz = b.z + (rnd() < 0.5 ? -hx : hx); py = base + rnd() * b.h; }
-      else if (face < 0.58) { px = b.x + (rnd() * 2 - 1) * hx; pz = b.z + (rnd() * 2 - 1) * hx; py = base + b.h; }
-      else { var s2 = rnd(); py = base + rnd() * b.h;
-        if (s2 < 0.5) { px = b.x + (rnd() < 0.5 ? -hx : hx); pz = b.z + (rnd() * 2 - 1) * hx; }
-        else { pz = b.z + (rnd() < 0.5 ? -hx : hx); px = b.x + (rnd() * 2 - 1) * hx; } }
-      P2[o] = px; P2[o + 1] = py; P2[o + 2] = pz;
-      var m = rnd(), a = rnd() * Math.PI * 2, rad;
-      if (m < 0.42) { rad = 5.1 + rnd() * 0.45; P3[o + 2] = gauss() * 0.12; }
-      else if (m < 0.55) { rad = 4.45 + gauss() * 0.03; P3[o + 2] = gauss() * 0.04; }
-      else if (m < 0.9) { var spokes = 36; a = Math.round(a / (Math.PI * 2) * spokes) / spokes * Math.PI * 2 + gauss() * 0.006; rad = 1.25 + rnd() * 2.75; P3[o + 2] = gauss() * 0.05; }
-      else { rad = Math.sqrt(rnd()) * 0.85; P3[o + 2] = gauss() * 0.08; }
-      P3[o] = Math.cos(a) * rad; P3[o + 1] = Math.sin(a) * rad;
+      P1[o] = rnd() * 36 - 18; P1[o + 1] = (lane - (L - 1) / 2) * 0.42 + gauss() * 0.02; P1[o + 2] = Math.sin(lane * 1.7) * 1.6 + gauss() * 0.02;
+      var bp = barPts[n]; P2[o] = bp[0]; P2[o + 1] = bp[1]; P2[o + 2] = bp[2]; K[o4 + 1] = bp[3];
+      var mp = medPts[n]; P3[o] = mp[0]; P3[o + 1] = mp[1]; P3[o + 2] = mp[2]; K[o4 + 2] = mp[3];
     }
     function attr(name, data, size) {
       var loc = gl.getAttribLocation(prog, name); if (loc < 0) return;
       var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
       gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
     }
-    attr('aP0', P0, 3); attr('aP1', P1, 3); attr('aP2', P2, 3); attr('aP3', P3, 3); attr('aR', R, 1); attr('aS', S, 2);
+    attr('aP0', P0, 3); attr('aP1', P1, 3); attr('aP2', P2, 3); attr('aP3', P3, 3); attr('aR', R, 1); attr('aS', S, 2); attr('aK', K, 4);
     var U = {};
-    ['uModel', 'uView', 'uProj', 'uTime', 'uMix', 'uAlpha', 'uSize', 'uPixel', 'uMouse', 'uLight', 'uInk', 'uHalo'].forEach(function (k) { U[k] = gl.getUniformLocation(prog, k); });
+    ['uModel', 'uView', 'uProj', 'uTime', 'uMix', 'uAlpha', 'uSize', 'uPixel', 'uMouse', 'uLight', 'uInk', 'uHalo', 'uGlow'].forEach(function (k) { U[k] = gl.getUniformLocation(prog, k); });
 
     // column-major mat4 helpers
     function mul(a, b) { var o = new Float32Array(16);
@@ -1562,8 +1618,9 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
     var LIGHT = { ink: 0.85, halo: 0.95 };
     function setTheme(light) {
       gl.uniform1f(U.uLight, light ? 1 : 0);
-      var base = isMobile ? 3.2 : 3.0;
-      gl.uniform1f(U.uSize, light ? base * 2.1 : base);          // paper dots are larger so the colour halo shows
+      var base = isMobile ? 3.4 : 3.2;
+      gl.uniform1f(U.uSize, light ? base * 1.95 : base * 1.28);  // paper dots are larger so the colour halo shows
+      gl.uniform1f(U.uGlow, 1.45);
       gl.uniform1f(U.uInk, LIGHT.ink); gl.uniform1f(U.uHalo, LIGHT.halo);
       gl.blendEquation(light ? gl.FUNC_REVERSE_SUBTRACT : gl.FUNC_ADD);
       if (light) gl.clearColor(244 / 255, 241 / 255, 234 / 255, 1); else gl.clearColor(9 / 255, 13 / 255, 17 / 255, 1);
