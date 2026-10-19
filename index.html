@@ -380,6 +380,9 @@ header.nav.solid { background: rgba(var(--ink-rgb),.72); backdrop-filter: blur(1
 .describe td:nth-child(2) { color: var(--text); }
 .describe td:last-child { font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
 .describe tr { transition: background .25s; } .describe tbody tr:hover { background: rgba(var(--gold-rgb),.05); }
+.describe.cmp td:last-child { font-family: inherit; font-size: .95rem; color: var(--text); white-space: normal; }
+.describe.cmp td:nth-child(2) { color: var(--muted); }
+.describe.cmp td:first-child { white-space: normal; }
 .describe .foot { padding: 10px 18px; font-family: var(--mono); font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); }
 .creds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
 .cred { border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: rgba(var(--card-rgb),.7); display: grid; gap: 6px; align-content: start; }
@@ -720,7 +723,7 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
           <li><span class="yr">2025</span><span class="t">AWS Certified Cloud Practitioner</span><span class="d">CLF-C02</span></li>
           <li><span class="yr">Before AWS</span><span class="t">Local pipelines</span><span class="d">Airflow + Spark batch pipeline, Kafka + Spark streaming pipeline, SQL Server star-schema warehouse.</span></li>
           <li><span class="yr">2026</span><span class="t">Batch lakehouse on AWS</span><span class="d">Terraform, Step Functions, Glue, Redshift Serverless, dbt, Iceberg.</span></li>
-          <li><span class="yr">Oct 2026</span><span class="t">Connected-car telemetry on AWS</span><span class="d">IoT Core, Firehose, Lambda, Athena, DynamoDB, CloudFormation.</span></li>
+          <li><span class="yr">Oct 2026</span><span class="t">Connected-car telemetry on AWS</span><span class="d">IoT Core, Kinesis Data Streams, Firehose, Lambda, Athena, DynamoDB, CloudFormation. Upgraded to a production design (v5.0), load- and resilience-tested on AWS.</span></li>
           <li><span class="yr">Oct 2026</span><span class="t">SpecFlow 1.1, tested in CI</span><span class="d">AI-assisted pipeline builder: DuckDB, Spark Structured Streaming on Kafka, OpenLineage, Gemini tool use, Terraform for AWS.</span></li>
           <li class="now"><span class="yr">Now</span><span class="t">Moving into data engineering</span><span class="d">Building on AWS, every week.</span></li>
         </ol>
@@ -798,43 +801,64 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
       <article class="proj" id="telemetry">
         <div class="proj-head">
           <div>
-            <div class="tags"><span class="tag">IoT · streaming</span><span class="tag">CloudFormation</span><span class="tag">Oct 2026</span></div>
+            <div class="tags"><span class="tag">IoT · streaming</span><span class="tag">Kinesis</span><span class="tag">CloudFormation</span><span class="tag">v5.0 · Oct 2026</span></div>
             <h3 class="ttl">Connected-car telemetry on AWS</h3>
-            <p class="sub">Tyre pressure, pedal and fuel readings from simulated cars, sent over MQTT every two seconds. The pipeline validates each reading, stores the history for SQL, keeps the latest state of every car, e-mails an alert when a tyre drops below 28 psi and answers questions in plain English.</p>
+            <p class="sub">Tyre pressure, pedal and fuel readings from simulated cars, sent over MQTT. The pipeline validates each reading, stores the history as Parquet for SQL, keeps the newest valid state of every car, e-mails an alert when a tyre drops below 28 psi, notices when a car goes silent and answers questions in plain English. Version 5.0 rebuilt it on a Kinesis stream after I worked out where the first design would stop scaling.</p>
           </div>
           <div class="links"><a class="btn" href="https://github.com/Arjun-M-101/connected-car-telemetry-aws" target="_blank" rel="noopener">Code <span class="arr">↗</span></a></div>
         </div>
         <div class="flow" data-reveal>
           <ol>
             <li><div class="node"><b>Car</b><span>MQTT · X.509 cert</span></div><div class="pipe"></div></li>
-            <li><div class="node hi"><b>IoT Core</b><span>3 rules · topic = identity</span></div><div class="pipe"></div></li>
+            <li><div class="node"><b>IoT Core</b><span>1 rule · topic = identity</span></div><div class="pipe"></div></li>
+            <li><div class="node hi"><b>Kinesis stream</b><span>ordered per car · 24 h replay</span></div><div class="pipe"></div></li>
             <li><div class="branch">
-              <div class="node"><b>Firehose + Lambda</b><span>validate · flag · keep raw</span></div>
-              <div class="node"><b>DynamoDB</b><span>latest state · ~1 s</span></div>
-              <div class="node"><b>SNS</b><span>tyre &lt; 28 psi</span></div>
+              <div class="node"><b>Firehose + Lambda</b><span>validate · Parquet · keep raw</span></div>
+              <div class="node"><b>State Lambda → DynamoDB</b><span>newest valid wins · p95 4.1 s</span></div>
+              <div class="node"><b>SNS</b><span>alert · reminder · back to normal</span></div>
             </div><div class="pipe"></div></li>
-            <li><div class="node"><b>S3 → Glue → Athena</b><span>history · 1–2 min</span></div><div class="pipe"></div></li>
+            <li><div class="node"><b>S3 → Glue → Athena</b><span>history · 2–3 min</span></div><div class="pipe"></div></li>
             <li><div class="node hi"><b>Chatbot</b><span>LLM picks 1 of 7 queries</span></div></li>
           </ol>
         </div>
         <div class="pstats" data-reveal>
-          <div><div class="n">30</div><div class="l">AWS resources in one CloudFormation template</div></div>
-          <div><div class="n">79</div><div class="l">pytest tests + cfn-lint in GitHub Actions</div></div>
-          <div><div class="n">5</div><div class="l">versions, each deployed and tested on AWS</div></div>
-          <div><div class="n">11</div><div class="l">real issues found, fixed and documented</div></div>
+          <div><div class="n">6,000</div><div class="l">readings from 100 cars in a load test, 0 errors</div></div>
+          <div><div class="n">4.1 s</div><div class="l">p95 from car to latest state in DynamoDB</div></div>
+          <div><div class="n">11/11</div><div class="l">real-world resilience checks passed on AWS</div></div>
+          <div><div class="n">109</div><div class="l">pytest tests + cfn-lint in GitHub Actions</div></div>
         </div>
         <ul class="feat" data-reveal>
           <li><span><b>One certificate per car.</b> A device can publish only to its own topic, and every rule reads the vehicle ID from the topic. A spoofing test was rejected by AWS IoT.</span></li>
           <li><span><b>Schema drift without data loss.</b> The validation Lambda types and range-checks fields, keeps unknown fields in <span class="mono">extras</span> and flags problems in <span class="mono">dq_issues</span>.</span></li>
           <li><span><b>A chatbot that can't write SQL.</b> Gemini chooses one of seven read-only queries and phrases the result. Prompt injection has nothing to inject into.</span></li>
-          <li><span><b>Operations built in.</b> CloudWatch dashboard, five alarms to a separate operations topic, 30-day log retention, partition projection instead of a crawler.</span></li>
+          <li><span><b>Built for what real cars do.</b> Late and duplicate readings can't move the state backwards, a wrong device clock is rejected, impossible values are never stored, and alerts use a cool-down and hysteresis instead of one e-mail per reading.</span></li>
+          <li><span><b>Failures are visible.</b> Retries, then a dead-letter queue; 12 alarms for throttling, lag, Parquet conversion and Lambda errors; an offline check e-mails when cars go silent.</span></li>
         </ul>
+        <div class="describe cmp" data-reveal>
+          <div class="bar"><i></i><i></i><i></i><span class="q"><b>COMPARE</b> v4_1 WITH v5_0;</span></div>
+          <div class="tbl">
+            <table>
+              <thead><tr><th>limit</th><th>v4.1 (proof of concept)</th><th>v5.0 (production design)</th></tr></thead>
+              <tbody>
+                <tr><td>throughput</td><td>about 1,000 cars: Firehose Direct PUT allows 1,000 requests/s per stream in Mumbai, one per message</td><td>Kinesis stream in front: 1,000 records/s per shard, ON_DEMAND scales automatically</td></tr>
+                <tr><td>rule budget</td><td>3 IoT rules ran on every message</td><td>1 rule, 3x the headroom in the same quota</td></tr>
+                <tr><td>correctness</td><td>a late or replayed reading overwrote newer state</td><td>newest valid reading wins, times compared in ms, future clocks rejected</td></tr>
+                <tr><td>alerts</td><td>one e-mail per low reading</td><td>first alert, reminder every 15 min, back to normal at 29 psi</td></tr>
+                <tr><td>query cost</td><td>JSON: Athena reads every column</td><td>Parquet: only the columns a query needs</td></tr>
+                <tr><td>failures</td><td>error log only, no replay</td><td>retries, dead-letter queue, 24 h replay, 12 alarms</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="foot">Why Kinesis and not MSK: no servers, VPC or always-on cluster, and IoT Core writes to it directly. MSK fits a team that already runs Kafka.</div>
+        </div>
         <div class="evidence">
           <div class="cap"><span>Evidence from the live AWS run</span><span>Click to enlarge</span></div>
           <div class="shots">
-            <button class="shot contain pair" data-full="img/tel-arch.webp" data-cap="Architecture: one CloudFormation stack, 30 resources" data-full-light="img/tel-arch-light.webp"><img class="dk" src="img/tel-arch.webp" alt="Telemetry architecture diagram" loading="lazy" style="background:#06142b"><img class="lt" src="img/tel-arch-light.webp" alt="" aria-hidden="true" loading="lazy" style="background:#fefefe"><figcaption>Architecture</figcaption></button>
-            <button class="shot" data-full="img/tel-dashboard.webp" data-cap="CloudWatch dashboard with live data and alarm status"><img src="img/tel-dashboard.webp" alt="CloudWatch dashboard" loading="lazy"><figcaption>CloudWatch dashboard</figcaption></button>
-            <button class="shot" data-full="img/tel-alerts.webp" data-cap="Low-tyre alert e-mails from SNS during a simulated slow leak"><img src="img/tel-alerts.webp" alt="SNS low tyre alert e-mails" loading="lazy"><figcaption>Low-tyre alerts</figcaption></button>
+            <button class="shot contain pair" data-full="img/tel-arch.webp" data-cap="Architecture v5.0: one CloudFormation stack, 45 resources" data-full-light="img/tel-arch-light.webp"><img class="dk" src="img/tel-arch.webp" alt="Telemetry architecture diagram" loading="lazy" style="background:#06142b"><img class="lt" src="img/tel-arch-light.webp" alt="" aria-hidden="true" loading="lazy" style="background:#fefefe"><figcaption>Architecture</figcaption></button>
+            <button class="shot" data-full="img/tel-loadtest.webp" data-cap="Load test: 100 cars, 6,000 of 6,000 readings, 0 errors, latest state p95 4.1 s"><img src="img/tel-loadtest-frame.webp" alt="Load test result" loading="lazy"><figcaption>Load test</figcaption></button>
+            <button class="shot" data-full="img/tel-resilience.webp" data-cap="Resilience test on AWS: late, duplicate, future-clock and impossible readings, hysteresis: 11 of 11 passed"><img src="img/tel-resilience-frame.webp" alt="Resilience test result" loading="lazy"><figcaption>Resilience test</figcaption></button>
+            <button class="shot" data-full="img/tel-alarms.webp" data-cap="CloudWatch: 11 alarms, all OK after the test runs"><img src="img/tel-alarms.webp" alt="CloudWatch alarms" loading="lazy"><figcaption>11 alarms OK</figcaption></button>
+            <button class="shot" data-full="img/tel-alerts.webp" data-cap="One low-tyre alert, then one back-to-normal e-mail (hysteresis)"><img src="img/tel-alerts.webp" alt="SNS alert and recovery e-mails" loading="lazy"><figcaption>Alert and recovery</figcaption></button>
             <button class="shot" data-full="img/tel-chatbot.webp" data-cap="Chatbot: Gemini picks the lowest_tyre query and answers"><img class="dk" src="img/tel-chatbot-frame.webp" alt="Chatbot answer in the terminal" loading="lazy"><figcaption>Chatbot answer</figcaption></button>
             <button class="shot" data-full="img/tel-spoof.webp" data-cap="Spoofing test: CAR-101 publishing to CAR-102's topic is rejected"><img src="img/tel-spoof.webp" alt="Device certificate spoofing test" loading="lazy"><figcaption>Spoof test rejected</figcaption></button>
           </div>
@@ -921,6 +945,24 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
               <dt>Saw</dt><dd>A bad-data test without <code>vehicle_id</code> broke the DynamoDB rule.</dd>
               <dt>Cause</dt><dd>The rule read the ID from the payload, which any sender can fake.</dd>
               <dt>Fix</dt><dd>All three rules now take the ID from the certificate-bound topic. The payload ID is only compared and flagged.</dd>
+            </dl>
+          </article>
+          <article class="inc" data-reveal>
+            <div class="top"><span>Telemetry · operations</span><span class="sev">Stuck tear-down</span></div>
+            <h4>The tear-down stopped half-way and left a bill running.</h4>
+            <dl>
+              <dt>Saw</dt><dd><code>Thing CAR-101 is still attached to one or more principals</code>, an empty <code>$BUCKET</code> and a stack stuck in <code>DELETE_FAILED</code>.</dd>
+              <dt>Cause</dt><dd>A second provisioning run replaced the local certificate record, so the old certificate stayed attached. The commands trusted local files instead of AWS.</dd>
+              <dt>Fix</dt><dd>One script that asks AWS what exists, deletes in the right order, retries known failures and checks 18 resource types until <code>ALL CLEAN</code>.</dd>
+            </dl>
+          </article>
+          <article class="inc" data-reveal>
+            <div class="top"><span>Telemetry · scale</span><span class="sev">Design review</span></div>
+            <h4>The first design would have stopped at about 1,000 cars.</h4>
+            <dl>
+              <dt>Saw</dt><dd>On paper, Firehose Direct PUT allows 1,000 requests a second per stream in Mumbai, and each message was one request.</dd>
+              <dt>Cause</dt><dd>No buffer between IoT Core and its consumers: no replay, no ordering, one alert per reading, and late data could overwrite newer state.</dd>
+              <dt>Fix</dt><dd>A Kinesis stream in front, Parquet history, a state Lambda where the newest valid reading wins, then a load test and a resilience test on AWS to prove it.</dd>
             </dl>
           </article>
           <article class="inc" data-reveal>
@@ -1145,11 +1187,11 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
               <tr><td>processing</td><td>PySpark, Spark SQL, Structured Streaming, DuckDB, Pandas</td><td>lakehouse, specflow</td></tr>
               <tr><td>ai_tooling</td><td>LLM tool use (Gemini, Bedrock), Pydantic, sqlglot, FastAPI</td><td>specflow, telemetry</td></tr>
               <tr><td>orchestration</td><td>AWS Step Functions, EventBridge, Apache Airflow</td><td>lakehouse, local</td></tr>
-              <tr><td>streaming_iot</td><td>Apache Kafka, Spark Structured Streaming, AWS IoT Core (MQTT), Amazon Data Firehose</td><td>telemetry, specflow</td></tr>
+              <tr><td>streaming_iot</td><td>Apache Kafka, Spark Structured Streaming, Amazon Kinesis Data Streams, AWS IoT Core (MQTT), Amazon Data Firehose</td><td>telemetry, specflow</td></tr>
               <tr><td>storage</td><td>Amazon S3, Apache Iceberg, Parquet, DynamoDB</td><td>both AWS builds</td></tr>
               <tr><td>warehouse_query</td><td>Redshift Serverless, Athena, Glue Data Catalog, dbt</td><td>lakehouse, telemetry</td></tr>
               <tr><td>iac_ci</td><td>Terraform, CloudFormation, GitHub Actions, pytest, cfn-lint</td><td>both AWS builds</td></tr>
-              <tr><td>observability</td><td>CloudWatch dashboards and alarms, SNS</td><td>telemetry, lakehouse</td></tr>
+              <tr><td>observability</td><td>CloudWatch dashboards, alarms and custom metrics, SNS, SQS dead-letter queues, load and resilience tests</td><td>telemetry, lakehouse</td></tr>
               <tr><td>governance</td><td>Column lineage, OpenLineage, Glue Data Catalog, Lake Formation LF-tags</td><td>specflow</td></tr>
               <tr><td>databases</td><td>Db2 z/OS, Db2 LUW, PostgreSQL</td><td>kyndryl, projects</td></tr>
               <tr><td>mainframe</td><td>JCL, Db2 UNLOAD, BPXBATCH, z/OS Unix to S3</td><td>kyndryl</td></tr>
