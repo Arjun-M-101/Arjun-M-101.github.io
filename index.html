@@ -322,6 +322,26 @@ header.nav.solid { background: rgba(var(--ink-rgb),.72); backdrop-filter: blur(1
 :root[data-theme="light"] .shot figcaption .lt { display: inline; }
 :root[data-theme="light"] .shot figcaption .dk { display: none; }
 :root[data-theme="light"] .shot img { filter: saturate(.95) brightness(.99); }
+/* architecture evolution tile: on hover it cycles v4.1 <-> v5.0 within the current theme */
+.shot.evo img.old { opacity: 0; }
+.shot.evo.show-old img.dk.old { opacity: 1; }
+.shot.evo.show-old img.dk.new { opacity: 0; }
+:root[data-theme="light"] .shot.evo img.old { opacity: 0; }
+:root[data-theme="light"] .shot.evo.show-old img.dk.old { opacity: 0; }
+:root[data-theme="light"] .shot.evo.show-old img.lt.old { opacity: 1; }
+:root[data-theme="light"] .shot.evo.show-old img.lt.new { opacity: 0; }
+.shot.evo img { transition: transform 1.2s var(--ease), filter .6s, opacity .9s var(--ease); }
+.evo-tag { position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em;
+  background: rgba(var(--ink-rgb),.82); border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; backdrop-filter: blur(6px); opacity: 0; transition: opacity .4s var(--ease); }
+.evo-tag b { font-weight: 600; opacity: .45; transition: opacity .5s var(--ease), color .5s var(--ease); }
+.evo-tag i { width: 18px; height: 1px; background: currentColor; opacity: .5; position: relative; }
+.evo-tag i::after { content: ""; position: absolute; right: -1px; top: -3px; border: 3.5px solid transparent; border-left-color: currentColor; border-right: 0; }
+.shot.evo:hover .evo-tag { opacity: 1; }
+.shot.evo.show-old .evo-tag .v-old, .shot.evo:not(.show-old) .evo-tag .v-new { opacity: 1; color: var(--gold); }
+:root[data-theme="light"] .shot.evo.show-old .evo-tag .v-old, :root[data-theme="light"] .shot.evo:not(.show-old) .evo-tag .v-new { color: var(--gold-ink); }
+.shot.evo .evo-hint { opacity: .6; }
+.shot.evo:hover .evo-hint { display: none; }
+@media (hover: none) { .shot.evo .evo-hint { display: none; } }
 :root[data-theme="light"] .shot:hover img { filter: none; }
 .shot:hover img { transform: scale(1.04); filter: none; }
 .shot figcaption { position: absolute; left: 10px; bottom: 10px; right: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: .04em;
@@ -832,7 +852,7 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
           <li><span><b>Schema drift without data loss.</b> The validation Lambda types and range-checks fields, keeps unknown fields in <span class="mono">extras</span> and flags problems in <span class="mono">dq_issues</span>.</span></li>
           <li><span><b>A chatbot that can't write SQL.</b> Gemini chooses one of seven read-only queries and phrases the result. Prompt injection has nothing to inject into.</span></li>
           <li><span><b>Built for what real cars do.</b> Late and duplicate readings can't move the state backwards, a wrong device clock is rejected, impossible values are never stored, and alerts use a cool-down and hysteresis instead of one e-mail per reading.</span></li>
-          <li><span><b>Failures are visible.</b> Retries, then a dead-letter queue; 12 alarms for throttling, lag, Parquet conversion and Lambda errors; an offline check e-mails when cars go silent.</span></li>
+          <li><span><b>Failures are visible.</b> Retries, then a dead-letter queue; 11 alarms for throttling, lag, Parquet conversion and Lambda errors; an offline check e-mails when cars go silent.</span></li>
         </ul>
         <div class="describe cmp" data-reveal>
           <div class="bar"><i></i><i></i><i></i><span class="q"><b>COMPARE</b> v4_1 WITH v5_0;</span></div>
@@ -854,7 +874,7 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
         <div class="evidence">
           <div class="cap"><span>Evidence from the live AWS run</span><span>Click to enlarge</span></div>
           <div class="shots">
-            <button class="shot contain pair" data-full="img/tel-arch.webp" data-cap="Architecture v5.0: one CloudFormation stack, 45 resources" data-full-light="img/tel-arch-light.webp"><img class="dk" src="img/tel-arch.webp" alt="Telemetry architecture diagram" loading="lazy" style="background:#06142b"><img class="lt" src="img/tel-arch-light.webp" alt="" aria-hidden="true" loading="lazy" style="background:#fefefe"><figcaption>Architecture</figcaption></button>
+            <button class="shot contain pair evo" data-full="img/tel-arch.webp" data-cap="Architecture v5.0 with AWS icons: one CloudFormation stack, 45 resources" data-full-light="img/tel-arch-light.webp" data-old-full="img/tel-arch-v41.webp" data-old-full-light="img/tel-arch-v41-light.webp" data-old-cap="Architecture v4.1 (before the upgrade): three IoT rules straight to Firehose, SNS and DynamoDB, 30 resources" aria-label="Architecture diagram, v5.0; hover to compare with v4.1"><img class="dk new" src="img/tel-arch.webp" alt="Telemetry architecture diagram v5.0" loading="lazy" style="background:#081932"><img class="lt new" src="img/tel-arch-light.webp" alt="" aria-hidden="true" loading="lazy" style="background:#fefefe"><img class="dk old" src="img/tel-arch-v41.webp" alt="" aria-hidden="true" loading="lazy" style="background:#05142b"><img class="lt old" src="img/tel-arch-v41-light.webp" alt="" aria-hidden="true" loading="lazy" style="background:#fefefe"><span class="evo-tag" aria-hidden="true"><b class="v-old">v4.1</b><i></i><b class="v-new">v5.0</b></span><figcaption><span class="evo-cap">Architecture v5.0</span><span class="evo-hint"> · hover: v4.1 → v5.0</span></figcaption></button>
             <button class="shot" data-full="img/tel-loadtest.webp" data-cap="Load test: 100 cars, 6,000 of 6,000 readings, 0 errors, latest state p95 4.1 s"><img src="img/tel-loadtest-frame.webp" alt="Load test result" loading="lazy"><figcaption>Load test</figcaption></button>
             <button class="shot" data-full="img/tel-resilience.webp" data-cap="Resilience test on AWS: late, duplicate, future-clock and impossible readings, hysteresis: 11 of 11 passed"><img src="img/tel-resilience-frame.webp" alt="Resilience test result" loading="lazy"><figcaption>Resilience test</figcaption></button>
             <button class="shot" data-full="img/tel-alarms.webp" data-cap="CloudWatch: 11 alarms, all OK after the test runs"><img src="img/tel-alarms.webp" alt="CloudWatch alarms" loading="lazy"><figcaption>11 alarms OK</figcaption></button>
@@ -1385,6 +1405,27 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
   new MutationObserver(function () { if (!lb.hidden && lastFocus) lbFill(lastFocus); }).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
   function closeLb() { lb.hidden = true; document.body.style.overflow = ''; if (lastFocus) lastFocus.focus(); }
   document.querySelectorAll('.shot').forEach(function (b) { b.addEventListener('click', function () { openLb(b); }); });
+  // Architecture evolution: while hovered, cross-fade v4.1 <-> v5.0 in the current theme.
+  // The lightbox opens whichever version is showing.
+  document.querySelectorAll('.shot.evo').forEach(function (b) {
+    var t = null, cap = b.querySelector('.evo-cap');
+    var NEW = { full: b.dataset.full, light: b.dataset.fullLight, cap: b.dataset.cap };
+    var OLD = { full: b.dataset.oldFull, light: b.dataset.oldFullLight, cap: b.dataset.oldCap };
+    function show(old) {
+      var v = old ? OLD : NEW;
+      b.classList.toggle('show-old', old);
+      b.dataset.full = v.full; b.dataset.fullLight = v.light; b.dataset.cap = v.cap;
+      cap.textContent = old ? 'Architecture v4.1 (before)' : 'Architecture v5.0 (now)';
+    }
+    function start() {
+      if (t) return;
+      show(true);
+      t = setInterval(function () { show(!b.classList.contains('show-old')); }, 2600);
+    }
+    function stop() { clearInterval(t); t = null; show(false); cap.textContent = 'Architecture v5.0'; }
+    b.addEventListener('mouseenter', start); b.addEventListener('mouseleave', stop);
+    b.addEventListener('click', function () { setTimeout(stop, 0); });
+  });
   document.getElementById('lbClose').addEventListener('click', closeLb);
   lb.addEventListener('click', function (e) { if (e.target === lb) closeLb(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !lb.hidden) closeLb(); });
