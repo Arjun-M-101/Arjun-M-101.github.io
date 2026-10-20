@@ -233,6 +233,7 @@ header.nav.solid { background: rgba(var(--ink-rgb),.72); backdrop-filter: blur(1
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { :root { --panel-a: .94; } }
 @media (prefers-reduced-transparency: reduce) { :root, :root[data-theme="light"] { --panel-a: 1; --panel-blur: 0px; } }
 
+
 /* ---------- method (sticky medallion) ---------- */
 .method { height: 340svh; }
 .method .stage { position: sticky; top: 0; height: 100svh; display: flex; align-items: center; padding-top: 72px; }
@@ -672,6 +673,43 @@ html.theme-fade, html.theme-fade *:not(.cursor):not(.cursor-dot):not(.progress):
 .proof .shot { min-height: 260px; height: 100%; }
 .proof .shot img { position: absolute; inset: 0; }
 @media (max-width: 860px) { .proof { grid-template-columns: minmax(0, 1fr); } .proof .shot { min-height: 220px; } }
+
+/* Text panels, round 2: every remaining block of copy that sat bare on the particle field (work stats, project
+   intros, feature lists, evidence captions, roadmap, vision columns, rules, small labels) gets the same surface. */
+.role, .stats, .pstats, .hero-stats, .feat, .roadmap, .horizon, .rules, .collab, .band .lead, .hero .lead, .proj .sub,
+.flow-note, .evidence .cap, .eyebrow {
+  -webkit-backdrop-filter: blur(var(--panel-blur)); backdrop-filter: blur(var(--panel-blur)); }
+.stats, .pstats, .hero-stats, .feat, .roadmap, .horizon, .rules, .band .lead, .hero .lead, .proj .sub {
+  border: 1px solid var(--line); border-radius: 22px; background: rgba(var(--card-rgb), var(--panel-a)); }
+.role { width: fit-content; max-width: 100%; padding: 12px 20px; border: 1px solid var(--line); border-radius: 16px; background: rgba(var(--card-rgb), var(--panel-a)); }
+.eyebrow { display: inline-block; padding: 4px 14px 4px 10px; border-radius: 100px; background: rgba(var(--card-rgb), calc(var(--panel-a) - .1)); }
+.flow-note { display: inline-block; padding: 6px 12px; border-radius: 10px; background: rgba(var(--card-rgb), var(--panel-a)); }
+.evidence .cap { padding: 9px 14px; border-radius: 12px; background: rgba(var(--card-rgb), var(--panel-a)); }
+.band .lead, .hero .lead { padding: clamp(18px, 2.4vw, 28px) clamp(20px, 2.8vw, 32px); border-radius: 18px; }
+.proj .sub { padding: 16px 20px; border-radius: 16px; }
+/* number rows */
+.stats > div, .stats > div:first-child { padding: 24px 22px 22px; }
+.stats { border-top: 1px solid var(--line); overflow: hidden; }
+.pstats > div { padding: 20px 18px 20px 22px; }
+.pstats > div + div { border-left: 1px solid rgba(var(--line-rgb),.6); }
+.hero-stats { padding: 22px; }
+@media (max-width: 860px) {
+  .stats > div:nth-child(3) { padding-left: 22px; }
+  .pstats > div:nth-child(3) { border-left: 0; }
+  .pstats > div:nth-child(n+3) { border-top: 1px solid rgba(var(--line-rgb),.6); }
+}
+/* lists and columns */
+.feat { padding: 24px 26px; gap: 16px 40px; }
+.case .feat { padding: 0; border: 0; border-radius: 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.roadmap { padding: 30px 22px 24px; }
+.horizon > div, .horizon > div + div { padding: 26px 28px; }
+.horizon > div:first-child { padding-left: 28px; }
+.rules { padding: 0 clamp(20px, 3vw, 36px); overflow: hidden; }
+.rules li:first-child { border-top: 0; } .rules li:last-child { border-bottom: 0; }
+.collab { background: linear-gradient(120deg, rgba(var(--bronze-rgb),.10), rgba(var(--gold-rgb),.06) 50%, rgba(var(--silver-rgb),.06)), rgba(var(--card-rgb), var(--panel-a)); }
+@media (max-width: 860px) { .horizon > div + div { padding-left: 28px; } }
+.tag { background: rgba(var(--card-rgb), var(--panel-a)); -webkit-backdrop-filter: blur(var(--panel-blur)); backdrop-filter: blur(var(--panel-blur)); }
+.status-pill { background: linear-gradient(rgba(var(--gold-rgb),.06), rgba(var(--gold-rgb),.06)), rgba(var(--card-rgb), var(--panel-a)); -webkit-backdrop-filter: blur(var(--panel-blur)); backdrop-filter: blur(var(--panel-blur)); }
 </style>
 
 <div class="boot" id="boot" hidden aria-hidden="true"><div><pre id="bootLog"></pre><div class="bar"><span id="bootBar"></span></div></div></div>
